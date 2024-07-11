@@ -1,0 +1,13 @@
+type Product {
+    id: ID!,
+    name: String!,
+    price: Float!,
+    discount: Float!,
+    sale: Float!,
+    url: String!,
+    image: String,
+}
+
+extend type Query {
+    findAllProduct: [Product]
+}

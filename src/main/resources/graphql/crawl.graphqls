@@ -1,0 +1,18 @@
+type Crawl {
+    id: ID!,
+    name: String!,
+    status: Boolean!
+}
+
+extend type Query {
+    findAllCrawl: [Crawl]
+}
+
+input CrawlInput {
+    name: String!,
+    status: Boolean!
+}
+
+extend type Mutation {
+    addCrawl(input: CrawlInput): Crawl
+}

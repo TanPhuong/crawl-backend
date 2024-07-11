@@ -1,0 +1,31 @@
+server:
+  port: 8088
+
+api:
+  prefix: api/v1
+
+user:
+  agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/94.0.4606.81 Safari/537.36 Edg/94.0.992.50
+
+graphql:
+  servlet:
+    mapping: /graphql
+
+jwt:
+  expiration: 2592000   #30days
+  secretKey: 3WdqgpUbcjKMTAiMFP7qbWnecAKyYQ2+9QxCiYEtL/8=
+
+spring:
+  datasource:
+    url: jdbc:mysql://localhost:3306/sale_management
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    username: root
+    password:
+    jpa:
+      show-sql: true
+      hibernate:
+        ddl-auto: none
+      properties:
+        hibernate:
+          dialect: org.hibernate.dialect.MySQL8Dialect
+          format_sql: true

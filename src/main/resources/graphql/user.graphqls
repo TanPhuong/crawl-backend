@@ -1,0 +1,15 @@
+#import ./role.graphql
+
+type User {
+    id: ID!,
+    fullName: String!,
+    email: String!,
+    phoneNumber: String!,
+    role: Role!
+}
+
+extend type Query {
+    findAllUser: [User],
+    findUserById(id: ID): User,
+    findUserByEmail(email: String): User,
+}
