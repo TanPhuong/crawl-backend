@@ -10,14 +10,15 @@ import lombok.*;
 @Data
 @Getter
 @Setter
+@Builder
 public class Product {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "productId")
+    @Column(name = "productID")
     private Long id;
 
-    @Column(name = "name")
+    @Column(name = "name_product")
     private String name;
 
     @Column(name = "price")
@@ -26,7 +27,7 @@ public class Product {
     @Column(name = "discount")
     private Double discount;
 
-    @Column(name = "salePrice")
+    @Column(name = "sale_price")
     private Double salePrice;
 
     @Column(name = "url")

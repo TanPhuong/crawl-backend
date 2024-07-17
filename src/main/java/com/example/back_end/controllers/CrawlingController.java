@@ -7,6 +7,7 @@ import com.example.back_end.models.Role;
 import com.example.back_end.repository.CrawlRepository;
 import com.example.back_end.services.CrawlingService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.graphql.data.method.annotation.Argument;
 import org.springframework.graphql.data.method.annotation.MutationMapping;
 import org.springframework.graphql.data.method.annotation.QueryMapping;
@@ -19,6 +20,12 @@ public class CrawlingController {
     private final CrawlingService crawlingService;
     private CrawlRepository crawlRepository;
 
+    @Autowired
+    public CrawlingController(CrawlRepository crawlRepository, CrawlingService crawlingService) {
+        this.crawlRepository = crawlRepository;
+        this.crawlingService = crawlingService;
+    }
+
     @QueryMapping
     public Iterable<Crawl> findAllCrawl() {
         return this.crawlRepository.findAll();
@@ -27,7 +34,7 @@ public class CrawlingController {
     @MutationMapping
     public Crawl addCrawl(@Validated @Argument(name = "input") CrawlDTO crawlDTO) {
         Crawl crawl = new Crawl();
-        crawl.setWebUrl(crawlDTO.getName());
+        crawl.setNameUrl(crawlDTO.getNameUrl());
         crawl.setStatus(crawlDTO.getStatus());
         return this.crawlRepository.save(crawl);
     }

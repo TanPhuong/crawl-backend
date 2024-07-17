@@ -16,8 +16,8 @@ public class Crawl {
     @Column(name = "crawlID")
     private Long id;
 
-    @Column(name = "webUrl")
-    private String webUrl;
+    @Column(name = "name_url")
+    private String nameUrl;
 
     @Column(name = "status")
     private Boolean status;

@@ -9,8 +9,8 @@ import lombok.*;
 @Getter
 @Setter
 public class CrawlDTO {
-    @Size(min = 3, max = 50, message = "Name must be between 3 and 50 characters")
-    private String name;
+    @Size(min = 3, max = 50, message = "Url must be between 3 and 50 characters")
+    private String nameUrl;
 
     private Boolean status;
 }

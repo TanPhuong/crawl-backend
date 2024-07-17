@@ -1,6 +1,6 @@
 type Crawl {
     id: ID!,
-    name: String!,
+    nameUrl: String!,
     status: Boolean!
 }
 
@@ -9,7 +9,7 @@ extend type Query {
 }
 
 input CrawlInput {
-    name: String!,
+    nameUrl: String!,
     status: Boolean!
 }
 

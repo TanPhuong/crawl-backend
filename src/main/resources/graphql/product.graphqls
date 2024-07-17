@@ -1,10 +1,10 @@
 type Product {
     id: ID!,
-    name: String!,
-    price: Float!,
-    discount: Float!,
-    sale: Float!,
-    url: String!,
+    name: String,
+    price: Float,
+    discount: Float,
+    salePrice: Float,
+    url: String,
     image: String,
 }
 
