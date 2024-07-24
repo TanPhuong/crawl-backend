@@ -17,6 +17,7 @@ import java.util.List;
 import java.util.Queue;
 import java.util.UUID;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
 
 @Service
@@ -34,6 +35,15 @@ public class CrawlingService {
         this.playwright = playwright;
     }
 
+    private boolean checkString(Queue<String> queue,String duplicate) {
+        for(String checkString : queue) {
+            if(checkString.contains(duplicate)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
     public Iterable<Crawl> findAll() {
         return this.crawlRepository.findAll();
     }
@@ -44,14 +54,16 @@ public class CrawlingService {
         Queue<String> listHref = new LinkedBlockingQueue<>();
         List<Product> productList = new ArrayList<>();
 
+        Queue<String> productHref = new LinkedBlockingQueue<>();
+
         try {
             // Playwright
-            Browser browser = playwright.chromium().launch(new BrowserType.LaunchOptions()
-                    .setProxy(new Proxy("http://45.127.248.127:5128")
-                            .setUsername("nlurysba")
-                            .setPassword("3r9nz50smr31")));
+            Browser browser = playwright.chromium().launch(new BrowserType.LaunchOptions());
             BrowserContext context = browser.newContext(new Browser.NewContextOptions()
                     .setUserAgent(userAgent)
+//                    .setProxy(new Proxy("http://45.127.248.127:5128")
+//                            .setUsername("nlurysba")
+//                            .setPassword("3r9nz50smr31"))
             );
 
             Page page = context.newPage();
@@ -67,7 +79,8 @@ public class CrawlingService {
                 for(Locator locator: locators) {
                     ElementHandle element = locator.elementHandle();
                     String href = element.getAttribute("href");
-                    if(href.contains("?")) {
+                    // Thêm code cho không trùng keyword như tiki
+                    if(checkString(listHref, keyword)) {
                         listHref.add(href);
                     }
                 }
@@ -75,16 +88,19 @@ public class CrawlingService {
 
 
             // Bước 2: Truy cập vào các <a> trong queue để lấy sản phẩm và lấy danh sách <a> của sản phẩm
+
+            // Crawl per Product in Wrapper/Container
             while (!listHref.isEmpty()) {
                 String link = listHref.poll();
 
+
                 // Skip product from main page
-                if(link.contains("from_item")) {
+                if (link.contains("from_item")) {
                     continue;
                 }
 
                 // Get link to the detail of flash sale page to get product list
-                if(!link.contains(url)) {
+                if (!link.contains(url)) {
                     String combineLink = url + link;
                     System.out.println(combineLink);
                     page.navigate(combineLink);
@@ -93,127 +109,104 @@ public class CrawlingService {
                     System.out.println(link);
                 }
 
-                page.waitForLoadState(LoadState.LOAD);
-
+                page.evaluate("window.scrollTo(0, document.body.scrollHeight)");
+                page.waitForLoadState(LoadState.NETWORKIDLE);
 
                 // Get product information
-                // 1. Get Title product
-                List<String> productTitles = page.locator("div[class*='ProductTitle']")
-                        .all()
-                        .stream()
-                        .map(element -> element.textContent())
-                        .collect(Collectors.toList());
 
-                // 2. Get original price (before sale)
-                List<String> originalPriceString = page.locator("div[class*='OriginalPrice']")
-                        .all()
-                        .stream()
-                        .map(element -> element.textContent())
-                        .collect(Collectors.toList());
-
-                List<Double> originalPrices = originalPriceString.stream()
-                        .map(priceStr -> {
-                            String numericPart = priceStr.replaceAll("[^0-9.-]+", "");
-                            if (numericPart.contains("-") || numericPart.contains(".")) {
-                                // Loại bỏ tất cả các dấu trừ và dấu chấm trong numericPart
-                                numericPart = numericPart.replaceAll("[-.]", "");
-                            }
-                            return Double.parseDouble(numericPart);
-                        })
-                        .collect(Collectors.toList());
-
-                // 3. Get sale percentage
-                List<String> discountPercentageString = page.locator("div[class*='DiscountPercentage']")
-                        .all()
-                        .stream()
-                        .map(element -> element.textContent())
-                        .collect(Collectors.toList());
-
-                List<Double> discountPercentages = discountPercentageString.stream()
-                        .map(priceStr -> {
-                            String numericPart = priceStr.replaceAll("[^0-9.-]+", "");
-                            if (numericPart.contains("-") || numericPart.contains(".")) {
-                                // Loại bỏ tất cả các dấu trừ và dấu chấm trong numericPart
-                                numericPart = numericPart.replaceAll("[-.]", "");
-                            }
-                            return Double.parseDouble(numericPart);
-                        })
-                        .collect(Collectors.toList());
+                // Get size of the product container
+                List<Locator> productTitleList = page.locator("div[class*='ProductTitle']").all();
 
 
-                // 4. Get discount price (after sale)
-                List<String> discountPriceString = page.locator("div[class*='DiscountedPrice']")
-                        .all()
-                        .stream()
-                        .map(element -> element.textContent())
-                        .collect(Collectors.toList());
+                for (int i = 0; i < productTitleList.size(); i++) {
 
-                List<Double> discountPrices = discountPriceString.stream()
-                        .map(priceStr -> {
-                            String numericPart = priceStr.replaceAll("[^0-9.-]+", "");
-                            if (numericPart.contains("-") || numericPart.contains(".")) {
-                                // Loại bỏ tất cả các dấu trừ và dấu chấm trong numericPart
-                                numericPart = numericPart.replaceAll("[-.]", "");
-                            }
-                            return Double.parseDouble(numericPart);
-                        })
-                        .collect(Collectors.toList());
+                    // 1. Name Product
+                    String productTitle = page.locator("div[class*='Wrapper']")
+                            .locator("div[class*='ProductTitle']").nth(i).textContent();
 
-                // 5. Get URL of products
-                List<String> productLinks = page.locator("a[data-view-id*='flashdeal']")
-                        .all()
-                        .stream()
-                        .map(element -> element.getAttribute("href"))
-                        .filter(href -> href != null && href.contains("https"))
-                        .collect(Collectors.toList());
+                    // 2. Original Price
+                    String originalPriceString = page.locator("div[class*='Wrapper']")
+                            .locator("div[class*='OriginalPrice']").nth(i).textContent();
+                    String convertOriginalPrice = originalPriceString.replaceAll("[^0-9.-]+", "");
+                    Double originalPrice = Double.parseDouble(convertOriginalPrice.replace(".",""));
+                    if(originalPriceString == "") {
+                        originalPrice = 0.0;
+                    }
 
-                List<String> shortenedProductLinks = productLinks.stream()
-                        .map(shortenedLink -> {
-                            int questionIndex = shortenedLink.indexOf('?');
-                            if (questionIndex != -1) {
-                                return shortenedLink.substring(0, questionIndex + 1);
-                            } else {
-                                return shortenedLink;
-                            }
-                        })
-                        .collect(Collectors.toList());
+                    // 3. Sale Percentage
+                    String discountPercentageString = page.locator("div[class*='Wrapper']")
+                            .locator("div[class*='DiscountPercentage']").nth(i).textContent();
+                    Double discountPercentage = Double.parseDouble(discountPercentageString.replaceAll("[^0-9.-]+", ""));
+                    if(discountPercentageString == "") {
+                        discountPercentage = 0.0;
+                    }
 
-                System.out.println(productTitles.size());
-                for(String title : productTitles) {
-                    System.out.println(title);
-                }
+                    // 4. Discount price
+                    String discountedPriceString = page.locator("div[class*='Wrapper']")
+                            .locator("div[class*='DiscountedPrice']").nth(i).textContent();
+                    String convertDiscountedPrice = discountedPriceString.replaceAll("[^0-9.-]+", "");
+                    Double discountedPrice = Double.parseDouble(convertDiscountedPrice.replace(".",""));
+                    if(discountedPriceString == "") {
+                        discountedPrice = 0.0;
+                    }
 
-                System.out.println(originalPrices.size());
-                for(Double price: originalPrices) {
-                    System.out.println(price);
-                }
+                    // 5. Url of Product
+                    String urlLink = page.locator("div[class*='Wrapper']")
+                            .locator("a[data-view-id*='flashdeal']").nth(i).textContent();
 
-                System.out.println(discountPrices.size());
-                for(Double price: discountPrices) {
-                    System.out.println(price);
-                }
+                    page.waitForTimeout(4000);
 
-                System.out.println(discountPercentages.size());
-                for(Double price: discountPercentages) {
-                    System.out.println(price);
-                }
+                    // Create new browser context to add proxy pool when navigate to each product url
+                    BrowserContext contextPerPage = browser.newContext(new Browser.NewContextOptions()
+                            .setUserAgent(userAgent)
+                            .setProxy(new Proxy("http://45.127.248.127:5128")
+                                    .setUsername("nlurysba")
+                                    .setPassword("3r9nz50smr31"))
+                    );
 
-                System.out.println(productLinks.size());
-                for(String links: productLinks) {
-                    System.out.println(links);
-                }
+                    Page perPage = contextPerPage.newPage();
 
-                // Set information for product
-//                for(int i = 0; i < productTitles.size(); i++) {
+                    perPage.navigate(urlLink);
+                    perPage.waitForLoadState(LoadState.LOAD);
+
+                    // 6. Get review quantity
+                    String reviewQuantityString = page.locator("a[data-view-id*='view_review']").textContent();
+                    String convertReviewQuantity = reviewQuantityString.replaceAll("[^0-9.-]+", "");
+                    Double reviewQuantity = Double.parseDouble(convertReviewQuantity);
+                    if(reviewQuantityString == "") {
+                        reviewQuantity = 0.0;
+                    }
+
+                    // 7. Get sold quantity
+                    String soldQuantityString = page.locator("div[data-view-id*='quantity_sold']").textContent();
+                    String convertSoldQuantity = soldQuantityString.replaceAll("[^0-9.-]+", "");
+                    Double soldQuantity = Double.parseDouble(convertSoldQuantity);
+                    if(soldQuantityString == "") {
+                        soldQuantity = 0.0;
+                    }
+
+//                    System.out.println(productTitle);
+//                    System.out.println(originalPrice);
+//                    System.out.println(discountPercentage);
+//                    System.out.println(discountedPrice);
+//                    System.out.println(urlLink);
+//                    System.out.println(reviewQuantity);
+//                    System.out.println(soldQuantity);
+
 //                    Product product = new Product();
-//                    product.setName(productTitles.get(i));
-//                    product.setPrice(originalPrices.get(i));
-//                    product.setDiscount(discountPercentages.get(i));
-//                    product.setSalePrice(discountPrices.get(i));
-//                    product.setUrl(shortenedProductLinks.get(i));
+//                    product.setName(productTitle);
+//                    product.setPrice(originalPrice);
+//                    product.setDiscount(discountPercentage);
+//                    product.setSalePrice(discountedPrice);
+//                    product.setUrl(urlLink);
+//                    product.setReview(reviewQuantity);
+//                    product.setSold(soldQuantity);
 //
 //                    productList.add(product);
-//                }
+
+                    perPage.close();
+
+                }
             }
 
             page.close();

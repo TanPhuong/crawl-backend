@@ -30,6 +30,8 @@ public class ProductController {
 
     @QueryMapping
     public Iterable<Product> findAllProduct() {
+        // Delete product in database
+        this.productRepository.deleteAll();
         // Find url
         Iterable<Crawl> crawlIterable = this.crawlingService.findAll();
         List<Crawl> urlList = new ArrayList<>();
@@ -53,7 +55,6 @@ public class ProductController {
                 }
 
                 for(Product product: productList) {
-                    this.productRepository.deleteAll();
                     this.productRepository.save(product);
                 }
             }

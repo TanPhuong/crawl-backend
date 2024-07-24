@@ -6,6 +6,8 @@ type Product {
     salePrice: Float,
     url: String,
     image: String,
+    review: Float,
+    sold: Float
 }
 
 extend type Query {

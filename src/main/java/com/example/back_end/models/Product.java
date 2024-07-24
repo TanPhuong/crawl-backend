@@ -35,4 +35,10 @@ public class Product {
 
     @Column(name = "image")
     private String image;
+
+    @Column(name = "review")
+    private Double review;
+
+    @Column(name = "sold")
+    private Double sold;
 }
