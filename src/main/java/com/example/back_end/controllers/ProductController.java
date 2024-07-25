@@ -42,8 +42,6 @@ public class ProductController {
         // Add Keyword
         List<String> keywords = new ArrayList<>();
         keywords.add("deal-hot");
-//        keywords.add("flash");
-//        keywords.add("flash-sale");
 
         // Crawling product
         for(Crawl url: urlList) {
@@ -60,6 +58,14 @@ public class ProductController {
             }
         }
         return this.productRepository.findAll();
+    }
+
+    @QueryMapping
+    public Iterable<Product> prioritizeProduct() {
+
+        Iterable<Product> productsList = this.productRepository.prioritizeProduct();
+
+        return productsList;
     }
 
 }

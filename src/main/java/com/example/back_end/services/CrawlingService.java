@@ -125,69 +125,84 @@ public class CrawlingService {
                             .locator("div[class*='ProductTitle']").nth(i).textContent();
 
                     // 2. Original Price
-                    String originalPriceString = page.locator("div[class*='Wrapper']")
-                            .locator("div[class*='OriginalPrice']").nth(i).textContent();
-                    String convertOriginalPrice = originalPriceString.replaceAll("[^0-9.-]+", "");
-                    Double originalPrice = Double.parseDouble(convertOriginalPrice.replace(".",""));
-                    if(originalPriceString == "") {
-                        originalPrice = 0.0;
+                    Float originalPrice;
+                    try {
+                        String originalPriceString = page.locator("div[class*='Wrapper']")
+                                .locator("div[class*='OriginalPrice']").nth(i).textContent();
+                        String convertOriginalPrice = originalPriceString.replaceAll("[^0-9.-]+", "");
+                        originalPrice = Float.parseFloat(convertOriginalPrice.replace(".",""));
+                    } catch (Exception e) {
+                        originalPrice = 0f;
                     }
 
                     // 3. Sale Percentage
-                    String discountPercentageString = page.locator("div[class*='Wrapper']")
-                            .locator("div[class*='DiscountPercentage']").nth(i).textContent();
-                    Double discountPercentage = Double.parseDouble(discountPercentageString.replaceAll("[^0-9.-]+", ""));
-                    if(discountPercentageString == "") {
-                        discountPercentage = 0.0;
+                    Float discountPercentage;
+                    try {
+                        String discountPercentageString = page.locator("div[class*='Wrapper']")
+                                .locator("div[class*='DiscountPercentage']").nth(i).textContent();
+                        discountPercentage = Float.parseFloat(discountPercentageString.replaceAll("[^0-9.-]+", ""));
+                    } catch (Exception e) {
+                        discountPercentage = 0f;
                     }
 
                     // 4. Discount price
-                    String discountedPriceString = page.locator("div[class*='Wrapper']")
-                            .locator("div[class*='DiscountedPrice']").nth(i).textContent();
-                    String convertDiscountedPrice = discountedPriceString.replaceAll("[^0-9.-]+", "");
-                    Double discountedPrice = Double.parseDouble(convertDiscountedPrice.replace(".",""));
-                    if(discountedPriceString == "") {
-                        discountedPrice = 0.0;
+                    Float discountedPrice;
+                    try {
+                        String discountedPriceString = page.locator("div[class*='Wrapper']")
+                                .locator("div[class*='DiscountedPrice']").nth(i).textContent();
+                        String convertDiscountedPrice = discountedPriceString.replaceAll("[^0-9.-]+", "");
+                        discountedPrice = Float.parseFloat(convertDiscountedPrice.replace(".",""));
+                    } catch (Exception e) {
+                        discountedPrice = 0f;
                     }
 
                     // 5. Url of Product
                     String urlLink = page.locator("div[class*='Wrapper']")
-                            .locator("a[data-view-id*='flashdeal']").nth(i).textContent();
+                            .locator("a[data-view-id*='flashdeal']").nth(i).getAttribute("href");
 
-                    page.waitForTimeout(4000);
+//                    page.waitForTimeout(4000);
 
                     // Create new browser context to add proxy pool when navigate to each product url
-                    BrowserContext contextPerPage = browser.newContext(new Browser.NewContextOptions()
-                            .setUserAgent(userAgent)
-                            .setProxy(new Proxy("http://45.127.248.127:5128")
-                                    .setUsername("nlurysba")
-                                    .setPassword("3r9nz50smr31"))
-                    );
+//                    BrowserContext contextPerPage = browser.newContext(new Browser.NewContextOptions()
+//                            .setUserAgent(userAgent)
+////                            .setProxy(new Proxy("http://45.127.248.127:5128")
+////                                    .setUsername("nlurysba")
+////                                    .setPassword("3r9nz50smr31"))
+//                    );
+//
+//                    Page perPage = contextPerPage.newPage();
+//
+//                    perPage.navigate(urlLink);
+//                    perPage.waitForLoadState(LoadState.NETWORKIDLE);
+//
+//                    // 6. Get review quantity
+//
+//                    Float reviewQuantity;
+//                    try {
+//                        perPage.waitForSelector("a[data-view-id*='view_review']", new Page.WaitForSelectorOptions().setTimeout(3000));
+//
+//                        String reviewQuantityString = perPage.locator("a[data-view-id*='view_review']").textContent();
+//                        String convertReviewQuantity = reviewQuantityString.replaceAll("[^0-9.-]+", "");
+//                        reviewQuantity = Float.parseFloat(convertReviewQuantity);
+//                    } catch (Exception e) {
+//                        reviewQuantity = 0f;
+//                    }
+//
+//                    // 7. Get sold quantity
+//                    Float soldQuantity;
+//                    try {
+//                        perPage.waitForSelector("div[data-view-id*='quantity_sold']", new Page.WaitForSelectorOptions().setTimeout(3000));
+//
+//                        String soldQuantityString = perPage.locator("div[data-view-id*='quantity_sold']").textContent();
+//                        String convertSoldQuantity = soldQuantityString.replaceAll("[^0-9.-]+", "");
+//                        soldQuantity = Float.parseFloat(convertSoldQuantity);
+//                    } catch (Exception e) {
+//                        soldQuantity = 0f;
+//                    }
 
-                    Page perPage = contextPerPage.newPage();
-
-                    perPage.navigate(urlLink);
-                    perPage.waitForLoadState(LoadState.LOAD);
-
-                    // 6. Get review quantity
-                    String reviewQuantityString = page.locator("a[data-view-id*='view_review']").textContent();
-                    String convertReviewQuantity = reviewQuantityString.replaceAll("[^0-9.-]+", "");
-                    Double reviewQuantity = Double.parseDouble(convertReviewQuantity);
-                    if(reviewQuantityString == "") {
-                        reviewQuantity = 0.0;
-                    }
-
-                    // 7. Get sold quantity
-                    String soldQuantityString = page.locator("div[data-view-id*='quantity_sold']").textContent();
-                    String convertSoldQuantity = soldQuantityString.replaceAll("[^0-9.-]+", "");
-                    Double soldQuantity = Double.parseDouble(convertSoldQuantity);
-                    if(soldQuantityString == "") {
-                        soldQuantity = 0.0;
-                    }
-
-//                    System.out.println(productTitle);
+                    System.out.println(productTitle);
 //                    System.out.println(originalPrice);
-//                    System.out.println(discountPercentage);
+                    System.out.println(discountPercentage);
 //                    System.out.println(discountedPrice);
 //                    System.out.println(urlLink);
 //                    System.out.println(reviewQuantity);
@@ -201,10 +216,10 @@ public class CrawlingService {
 //                    product.setUrl(urlLink);
 //                    product.setReview(reviewQuantity);
 //                    product.setSold(soldQuantity);
-//
+
 //                    productList.add(product);
 
-                    perPage.close();
+//                    perPage.close();
 
                 }
             }

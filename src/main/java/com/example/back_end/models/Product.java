@@ -22,13 +22,13 @@ public class Product {
     private String name;
 
     @Column(name = "price")
-    private Double price;
+    private Float price;
 
     @Column(name = "discount")
-    private Double discount;
+    private Float discount;
 
     @Column(name = "sale_price")
-    private Double salePrice;
+    private Float salePrice;
 
     @Column(name = "url")
     private String url;
@@ -37,8 +37,8 @@ public class Product {
     private String image;
 
     @Column(name = "review")
-    private Double review;
+    private Float review;
 
     @Column(name = "sold")
-    private Double sold;
+    private Float sold;
 }

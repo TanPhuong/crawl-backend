@@ -11,5 +11,6 @@ type Product {
 }
 
 extend type Query {
-    findAllProduct: [Product]
+    findAllProduct: [Product],
+    prioritizeProduct: [Product]
 }
