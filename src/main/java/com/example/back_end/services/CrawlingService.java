@@ -2,6 +2,7 @@ package com.example.back_end.services;
 
 import com.example.back_end.models.Crawl;
 import com.example.back_end.models.Product;
+import com.example.back_end.models.Time;
 import com.example.back_end.repository.CrawlRepository;
 import com.microsoft.playwright.*;
 import com.microsoft.playwright.Page.WaitForNavigationOptions;
@@ -12,6 +13,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDate;
+import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Queue;
@@ -48,13 +51,12 @@ public class CrawlingService {
         return this.crawlRepository.findAll();
     }
 
-    public List<Product> crawlProduct(String url, List<String> keywords) {
+    public List<Product> crawlProduct(Long urlID,String url, List<String> keywords) {
 
         // Playwright
         Queue<String> listHref = new LinkedBlockingQueue<>();
         List<Product> productList = new ArrayList<>();
 
-        Queue<String> productHref = new LinkedBlockingQueue<>();
 
         try {
             // Playwright
@@ -93,7 +95,6 @@ public class CrawlingService {
             while (!listHref.isEmpty()) {
                 String link = listHref.poll();
 
-
                 // Skip product from main page
                 if (link.contains("from_item")) {
                     continue;
@@ -111,6 +112,19 @@ public class CrawlingService {
 
                 page.evaluate("window.scrollTo(0, document.body.scrollHeight)");
                 page.waitForLoadState(LoadState.NETWORKIDLE);
+
+                // Get time flash sale
+                List<Locator> saleTimeList = page.locator("div[class*='upcoming-time']").all();
+                for (Locator saleTimeLocator : saleTimeList) {
+                    ElementHandle element = saleTimeLocator.elementHandle();
+                    String saleTimeString = element.textContent();
+                    LocalTime saleTime = LocalTime.parse(saleTimeString);
+
+                    Time time = new Time();
+                    time.setTimeCrawl(saleTime);
+                    time.setDateCrawl(LocalDate.now());
+                    time.setCrawlID(urlID);
+                }
 
                 // Get product information
 
@@ -160,45 +174,45 @@ public class CrawlingService {
                     String urlLink = page.locator("div[class*='Wrapper']")
                             .locator("a[data-view-id*='flashdeal']").nth(i).getAttribute("href");
 
-//                    page.waitForTimeout(4000);
+                    page.waitForTimeout(4000);
 
-                    // Create new browser context to add proxy pool when navigate to each product url
-//                    BrowserContext contextPerPage = browser.newContext(new Browser.NewContextOptions()
-//                            .setUserAgent(userAgent)
-////                            .setProxy(new Proxy("http://45.127.248.127:5128")
-////                                    .setUsername("nlurysba")
-////                                    .setPassword("3r9nz50smr31"))
-//                    );
-//
-//                    Page perPage = contextPerPage.newPage();
-//
-//                    perPage.navigate(urlLink);
-//                    perPage.waitForLoadState(LoadState.NETWORKIDLE);
-//
-//                    // 6. Get review quantity
-//
-//                    Float reviewQuantity;
-//                    try {
-//                        perPage.waitForSelector("a[data-view-id*='view_review']", new Page.WaitForSelectorOptions().setTimeout(3000));
-//
-//                        String reviewQuantityString = perPage.locator("a[data-view-id*='view_review']").textContent();
-//                        String convertReviewQuantity = reviewQuantityString.replaceAll("[^0-9.-]+", "");
-//                        reviewQuantity = Float.parseFloat(convertReviewQuantity);
-//                    } catch (Exception e) {
-//                        reviewQuantity = 0f;
-//                    }
-//
-//                    // 7. Get sold quantity
-//                    Float soldQuantity;
-//                    try {
-//                        perPage.waitForSelector("div[data-view-id*='quantity_sold']", new Page.WaitForSelectorOptions().setTimeout(3000));
-//
-//                        String soldQuantityString = perPage.locator("div[data-view-id*='quantity_sold']").textContent();
-//                        String convertSoldQuantity = soldQuantityString.replaceAll("[^0-9.-]+", "");
-//                        soldQuantity = Float.parseFloat(convertSoldQuantity);
-//                    } catch (Exception e) {
-//                        soldQuantity = 0f;
-//                    }
+//                     Create new browser context to add proxy pool when navigate to each product url
+                    BrowserContext contextPerPage = browser.newContext(new Browser.NewContextOptions()
+                            .setUserAgent(userAgent)
+//                            .setProxy(new Proxy("http://45.127.248.127:5128")
+//                                    .setUsername("nlurysba")
+//                                    .setPassword("3r9nz50smr31"))
+                    );
+
+                    Page perPage = contextPerPage.newPage();
+
+                    perPage.navigate(urlLink);
+                    perPage.waitForLoadState(LoadState.NETWORKIDLE);
+
+                    // 6. Get review quantity
+
+                    Float reviewQuantity;
+                    try {
+                        perPage.waitForSelector("a[data-view-id*='view_review']", new Page.WaitForSelectorOptions().setTimeout(3000));
+
+                        String reviewQuantityString = perPage.locator("a[data-view-id*='view_review']").textContent();
+                        String convertReviewQuantity = reviewQuantityString.replaceAll("[^0-9.-]+", "");
+                        reviewQuantity = Float.parseFloat(convertReviewQuantity);
+                    } catch (Exception e) {
+                        reviewQuantity = 0f;
+                    }
+
+                    // 7. Get sold quantity
+                    Float soldQuantity;
+                    try {
+                        perPage.waitForSelector("div[data-view-id*='quantity_sold']", new Page.WaitForSelectorOptions().setTimeout(3000));
+
+                        String soldQuantityString = perPage.locator("div[data-view-id*='quantity_sold']").textContent();
+                        String convertSoldQuantity = soldQuantityString.replaceAll("[^0-9.-]+", "");
+                        soldQuantity = Float.parseFloat(convertSoldQuantity);
+                    } catch (Exception e) {
+                        soldQuantity = 0f;
+                    }
 
                     System.out.println(productTitle);
 //                    System.out.println(originalPrice);
@@ -219,7 +233,7 @@ public class CrawlingService {
 
 //                    productList.add(product);
 
-//                    perPage.close();
+                    perPage.close();
 
                 }
             }

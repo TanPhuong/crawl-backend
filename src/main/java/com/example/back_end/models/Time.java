@@ -29,5 +29,5 @@ public class Time {
 
     @ManyToOne
     @JoinColumn(name = "crawlID")
-    private Crawl crawl;
+    private Long crawlID;
 }
