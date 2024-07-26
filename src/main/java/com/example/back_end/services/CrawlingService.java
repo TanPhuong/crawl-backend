@@ -123,7 +123,6 @@ public class CrawlingService {
                     Time time = new Time();
                     time.setTimeCrawl(saleTime);
                     time.setDateCrawl(LocalDate.now());
-                    time.setCrawlID(urlID);
                 }
 
                 // Get product information
