@@ -114,21 +114,27 @@ public class CrawlingService {
                 page.waitForLoadState(LoadState.NETWORKIDLE);
 
                 // Get time flash sale
-                List<Locator> saleTimeList = page.locator("div[class*='upcoming-time']").all();
-                for (Locator saleTimeLocator : saleTimeList) {
-                    ElementHandle element = saleTimeLocator.elementHandle();
-                    String saleTimeString = element.textContent();
-                    LocalTime saleTime = LocalTime.parse(saleTimeString);
+                try {
+                    page.waitForSelector("div[class*='upcoming-time']", new Page.WaitForSelectorOptions().setTimeout(2000));
 
-                    // create crawl entity to save to time in database
-                    Crawl crawl = new Crawl();
-                    crawl.setNameUrl(url);
-                    crawl.setStatus(true);
+                    List<Locator> saleTimeList = page.locator("div[class*='upcoming-time']").all();
+                    for (Locator saleTimeLocator : saleTimeList) {
+                        ElementHandle element = saleTimeLocator.elementHandle();
+                        String saleTimeString = element.textContent();
+                        LocalTime saleTime = LocalTime.parse(saleTimeString);
 
-                    Time time = new Time();
-                    time.setTimeCrawl(saleTime);
-                    time.setDateCrawl(LocalDate.now());
-                    time.setCrawl(crawl);
+                        // create crawl entity to save to time in database
+                        Crawl crawl = new Crawl();
+                        crawl.setNameUrl(url);
+                        crawl.setStatus(true);
+
+                        Time time = new Time();
+                        time.setTimeCrawl(saleTime);
+                        time.setDateCrawl(LocalDate.now());
+                        time.setCrawl(crawl);
+                    }
+                } catch (Exception e) {
+                    e.printStackTrace();
                 }
 
                 // Get product information
@@ -146,8 +152,15 @@ public class CrawlingService {
                     // 2. Original Price
                     Float originalPrice;
                     try {
-                        String originalPriceString = page.locator("div[class*='Wrapper']")
-                                .locator("div[class*='OriginalPrice']").nth(i).textContent();
+                        Locator originalPriceLocator = page.locator("div[class*='Wrapper']")
+                                .locator("div[class*='OriginalPrice']").nth(i);
+                        originalPriceLocator.waitFor(new Locator.WaitForOptions().setTimeout(2000));
+
+                        String originalPriceString = originalPriceLocator.elementHandle().textContent();
+
+//                        String originalPriceString = page.locator("div[class*='Wrapper']")
+//                                .locator("div[class*='OriginalPrice']").nth(i).textContent();
+
                         String convertOriginalPrice = originalPriceString.replaceAll("[^0-9.-]+", "");
                         originalPrice = Float.parseFloat(convertOriginalPrice.replace(".",""));
                     } catch (Exception e) {
@@ -157,8 +170,16 @@ public class CrawlingService {
                     // 3. Sale Percentage
                     Float discountPercentage;
                     try {
-                        String discountPercentageString = page.locator("div[class*='Wrapper']")
-                                .locator("div[class*='DiscountPercentage']").nth(i).textContent();
+
+                        Locator discountPercentageLocator = page.locator("div[class*='Wrapper']")
+                                .locator("div[class*='DiscountPercentage']").nth(i);
+                        discountPercentageLocator.waitFor(new Locator.WaitForOptions().setTimeout(2000));
+
+                        String discountPercentageString = discountPercentageLocator.elementHandle().textContent();
+
+//                        String discountPercentageString = page.locator("div[class*='Wrapper']")
+//                                .locator("div[class*='DiscountPercentage']").nth(i).textContent();
+
                         discountPercentage = Float.parseFloat(discountPercentageString.replaceAll("[^0-9.-]+", ""));
                     } catch (Exception e) {
                         discountPercentage = 0f;
@@ -167,9 +188,16 @@ public class CrawlingService {
                     // 4. Discount price
                     Float discountedPrice;
                     try {
-                        String discountedPriceString = page.locator("div[class*='Wrapper']")
-                                .locator("div[class*='DiscountedPrice']").nth(i).textContent();
-                        String convertDiscountedPrice = discountedPriceString.replaceAll("[^0-9.-]+", "");
+                        Locator discountedPriceLocator = page.locator("div[class*='Wrapper']")
+                                .locator("div[class*='DiscountedPrice']").nth(i);
+                        discountedPriceLocator.waitFor(new Locator.WaitForOptions().setTimeout(2000));
+
+                        String discountPercentageString = discountedPriceLocator.elementHandle().textContent();
+
+//                        String discountedPriceString = page.locator("div[class*='Wrapper']")
+//                                .locator("div[class*='DiscountedPrice']").nth(i).textContent();
+
+                        String convertDiscountedPrice = discountPercentageString.replaceAll("[^0-9.-]+", "");
                         discountedPrice = Float.parseFloat(convertDiscountedPrice.replace(".",""));
                     } catch (Exception e) {
                         discountedPrice = 0f;
@@ -219,7 +247,7 @@ public class CrawlingService {
                         soldQuantity = 0f;
                     }
 
-//                    System.out.println(productTitle);
+                    System.out.println(productTitle);
 //                    System.out.println(originalPrice);
 //                    System.out.println(discountPercentage);
 //                    System.out.println(discountedPrice);

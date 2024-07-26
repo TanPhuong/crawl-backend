@@ -70,7 +70,7 @@ public class ProductController {
         keywords.add("deal-hot");
 
         if(nextTimeCrawl != null) {
-            if(now.isAfter(nextTimeCrawl) || this.productRepository.count() < 30) {
+            if(now.isAfter(nextTimeCrawl)) {
                 // Delete product and time crawl in database in order to crawl the new one
                 this.productRepository.deleteAll();
                 this.timeRepository.deleteAll();
@@ -91,8 +91,25 @@ public class ProductController {
                     }
                 }
             }
+        } else if(this.productRepository.count() < 30) {
+            // Crawling product
+            for(Crawl url: urlList) {
+                String urlLink = url.getNameUrl();
+                Long urlID = url.getId();
+                if(url.getStatus()) {
+                    List<Product> productList = this.crawlingService.crawlProduct(urlID, urlLink, keywords);
+                    if(productList == null) {
+                        break;
+                    }
+
+                    for(Product product: productList) {
+                        this.productRepository.save(product);
+                    }
+                }
+            }
         }
 
+        System.out.println(now);
         return this.productRepository.findAll();
     }
 
