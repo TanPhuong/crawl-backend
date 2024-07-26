@@ -51,7 +51,7 @@ public class CrawlingService {
         return this.crawlRepository.findAll();
     }
 
-    public List<Product> crawlProduct(Long urlID,String url, List<String> keywords) {
+    public List<Product> crawlProduct(Long urlID, String url, List<String> keywords) {
 
         // Playwright
         Queue<String> listHref = new LinkedBlockingQueue<>();
@@ -120,9 +120,15 @@ public class CrawlingService {
                     String saleTimeString = element.textContent();
                     LocalTime saleTime = LocalTime.parse(saleTimeString);
 
+                    // create crawl entity to save to time in database
+                    Crawl crawl = new Crawl();
+                    crawl.setNameUrl(url);
+                    crawl.setStatus(true);
+
                     Time time = new Time();
                     time.setTimeCrawl(saleTime);
                     time.setDateCrawl(LocalDate.now());
+                    time.setCrawl(crawl);
                 }
 
                 // Get product information
@@ -213,24 +219,24 @@ public class CrawlingService {
                         soldQuantity = 0f;
                     }
 
-                    System.out.println(productTitle);
+//                    System.out.println(productTitle);
 //                    System.out.println(originalPrice);
-                    System.out.println(discountPercentage);
+//                    System.out.println(discountPercentage);
 //                    System.out.println(discountedPrice);
 //                    System.out.println(urlLink);
 //                    System.out.println(reviewQuantity);
 //                    System.out.println(soldQuantity);
 
-//                    Product product = new Product();
-//                    product.setName(productTitle);
-//                    product.setPrice(originalPrice);
-//                    product.setDiscount(discountPercentage);
-//                    product.setSalePrice(discountedPrice);
-//                    product.setUrl(urlLink);
-//                    product.setReview(reviewQuantity);
-//                    product.setSold(soldQuantity);
+                    Product product = new Product();
+                    product.setName(productTitle);
+                    product.setPrice(originalPrice);
+                    product.setDiscount(discountPercentage);
+                    product.setSalePrice(discountedPrice);
+                    product.setUrl(urlLink);
+                    product.setReview(reviewQuantity);
+                    product.setSold(soldQuantity);
 
-//                    productList.add(product);
+                    productList.add(product);
 
                     perPage.close();
 

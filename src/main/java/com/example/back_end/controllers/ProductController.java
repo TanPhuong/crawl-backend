@@ -96,11 +96,11 @@ public class ProductController {
         return this.productRepository.findAll();
     }
 
-//    @QueryMapping
-//    public Iterable<Product> prioritizeProduct() {
-//
-//        Iterable<Product> productsList = this.productRepository.prioritizeProduct();
-//
-//        return productsList;
-//    }
+    @QueryMapping
+    public Iterable<Product> prioritizeProduct() {
+
+        Iterable<Product> productsList = this.productRepository.prioritizeProduct();
+
+        return productsList;
+    }
 }
