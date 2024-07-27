@@ -1,0 +1,9 @@
+
+type Task {
+    taskId: String,
+    taskData: String
+}
+
+extend type Mutation {
+    createTasks(numberOfTasks: Int!): String
+}
