@@ -17,15 +17,19 @@ public class ProductDTO {
     private String name;
 
     @NotBlank(message = "Price is required")
-    private Double price;
+    private Float price;
 
-    private Double salePrice;
+    private Float salePrice;
 
     @NotBlank(message = "Discount is required")
-    private Double discount;
+    private Float discount;
 
     @NotBlank(message = "URL is required")
     private String url;
 
     private String image;
+
+    private Float review;
+
+    private Float sold;
 }

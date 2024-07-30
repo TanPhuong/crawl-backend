@@ -92,6 +92,8 @@ public class ProductController {
                 }
             }
         } else if(this.productRepository.count() < 30) {
+
+            this.timeRepository.deleteAll();
             // Crawling product
             for(Crawl url: urlList) {
                 String urlLink = url.getNameUrl();

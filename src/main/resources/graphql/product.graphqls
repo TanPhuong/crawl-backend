@@ -10,6 +10,18 @@ type Product {
     sold: Float
 }
 
+input ProductInput {
+    id: ID!,
+    name: String,
+    price: Float,
+    discount: Float,
+    salePrice: Float,
+    url: String,
+    image: String,
+    review: Float,
+    sold: Float
+}
+
 extend type Query {
     findAllProduct: [Product],
     prioritizeProduct: [Product]

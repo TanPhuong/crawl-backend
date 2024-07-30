@@ -149,7 +149,11 @@ public class CrawlingService {
                     String productTitle = page.locator("div[class*='Wrapper']")
                             .locator("div[class*='ProductTitle']").nth(i).textContent();
 
-                    // 2. Original Price
+                    // 2. Product Image
+                    String imageProduct = page.locator("div[class*='Wrapper']")
+                            .locator("img[class*='WebpImg'").nth(i).getAttribute("src");
+
+                    // 3. Original Price
                     Float originalPrice;
                     try {
                         Locator originalPriceLocator = page.locator("div[class*='Wrapper']")
@@ -167,7 +171,7 @@ public class CrawlingService {
                         originalPrice = 0f;
                     }
 
-                    // 3. Sale Percentage
+                    // 4. Sale Percentage
                     Float discountPercentage;
                     try {
 
@@ -185,7 +189,7 @@ public class CrawlingService {
                         discountPercentage = 0f;
                     }
 
-                    // 4. Discount price
+                    // 5. Discount price
                     Float discountedPrice;
                     try {
                         Locator discountedPriceLocator = page.locator("div[class*='Wrapper']")
@@ -203,7 +207,7 @@ public class CrawlingService {
                         discountedPrice = 0f;
                     }
 
-                    // 5. Url of Product
+                    // 6. Url of Product
                     String urlLink = page.locator("div[class*='Wrapper']")
                             .locator("a[data-view-id*='flashdeal']").nth(i).getAttribute("href");
 
@@ -222,7 +226,7 @@ public class CrawlingService {
                     perPage.navigate(urlLink);
                     perPage.waitForLoadState(LoadState.NETWORKIDLE);
 
-                    // 6. Get review quantity
+                    // 7. Get review quantity
 
                     Float reviewQuantity;
                     try {
@@ -235,7 +239,7 @@ public class CrawlingService {
                         reviewQuantity = 0f;
                     }
 
-                    // 7. Get sold quantity
+                    // 8. Get sold quantity
                     Float soldQuantity;
                     try {
                         perPage.waitForSelector("div[data-view-id*='quantity_sold']", new Page.WaitForSelectorOptions().setTimeout(3000));
@@ -248,6 +252,7 @@ public class CrawlingService {
                     }
 
                     System.out.println(productTitle);
+//                    System.out.println(imageProduct);
 //                    System.out.println(originalPrice);
 //                    System.out.println(discountPercentage);
 //                    System.out.println(discountedPrice);
@@ -257,6 +262,7 @@ public class CrawlingService {
 
                     Product product = new Product();
                     product.setName(productTitle);
+                    product.setImage(imageProduct);
                     product.setPrice(originalPrice);
                     product.setDiscount(discountPercentage);
                     product.setSalePrice(discountedPrice);
