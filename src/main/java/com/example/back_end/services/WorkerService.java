@@ -2,6 +2,7 @@ package com.example.back_end.services;
 
 import jakarta.annotation.PostConstruct;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.redis.connection.RedisConnection;
 import org.springframework.data.redis.connection.stream.*;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.StreamOperations;
@@ -23,19 +24,27 @@ public class WorkerService {
 
     @PostConstruct
     public void init() {
-        processTasks();
+        createConsumerGroup();
+    }
+
+    private void createConsumerGroup() {
+        StreamOperations<String, Object, Object> streamOps = redisTemplate.opsForStream();
+        try {
+            // Tạo Consumer Group nếu không tồn tại
+            streamOps.createGroup(TASK_STREAM, CONSUMER_GROUP);
+            System.out.println("Consumer Group created successfully.");
+        } catch (Exception e) {
+            if (e.getMessage().contains("BUSYGROUP")) {
+                System.out.println("Consumer Group already exists.");
+            } else {
+                e.printStackTrace();
+            }
+        }
     }
 
     @Async
     public void processTasks() {
         StreamOperations<String, Object, Object> streamOps = redisTemplate.opsForStream();
-
-        // Tạo Consumer Group nếu chưa có
-        try {
-            streamOps.createGroup(TASK_STREAM, CONSUMER_GROUP);
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
 
         while (true) {
             // Đọc task từ stream bằng consumer group

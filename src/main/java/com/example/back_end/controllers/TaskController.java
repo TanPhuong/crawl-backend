@@ -23,7 +23,7 @@ public class TaskController {
     }
 
     @MutationMapping
-    public String createTasks(@Argument Product productDTO) {
+    public String createTasks(@Argument(name = "productInput") Product productDTO) {
         this.taskService.createAndPushTasks(productDTO);
         this.workerService.processTasks();
         return "Complete task";

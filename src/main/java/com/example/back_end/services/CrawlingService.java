@@ -51,7 +51,7 @@ public class CrawlingService {
         return this.crawlRepository.findAll();
     }
 
-    public List<Product> crawlProduct(Long urlID, String url, List<String> keywords) {
+    public List<Product> crawlProduct(String url, List<String> keywords) {
 
         // Playwright
         Queue<String> listHref = new LinkedBlockingQueue<>();
@@ -88,7 +88,6 @@ public class CrawlingService {
                 }
             }
 
-
             // Bước 2: Truy cập vào các <a> trong queue để lấy sản phẩm và lấy danh sách <a> của sản phẩm
 
             // Crawl per Product in Wrapper/Container
@@ -115,13 +114,19 @@ public class CrawlingService {
 
                 // Get time flash sale
                 try {
-                    page.waitForSelector("div[class*='upcoming-time']", new Page.WaitForSelectorOptions().setTimeout(2000));
+                    List<Locator> saleTimeList = page.locator("div[class*='Wrapper']")
+                            .locator("div[class*='upcoming-time']").all();
 
-                    List<Locator> saleTimeList = page.locator("div[class*='upcoming-time']").all();
+                    if(saleTimeList.isEmpty()) {
+                        throw new Exception("No elements found with the specified selector.");
+                    }
+
                     for (Locator saleTimeLocator : saleTimeList) {
                         ElementHandle element = saleTimeLocator.elementHandle();
                         String saleTimeString = element.textContent();
                         LocalTime saleTime = LocalTime.parse(saleTimeString);
+
+                        System.out.println(saleTime);
 
                         // create crawl entity to save to time in database
                         Crawl crawl = new Crawl();
@@ -151,7 +156,7 @@ public class CrawlingService {
 
                     // 2. Product Image
                     String imageProduct = page.locator("div[class*='Wrapper']")
-                            .locator("img[class*='WebpImg'").nth(i).getAttribute("src");
+                            .locator("img[class*='WebpImg']").nth(i).getAttribute("src");
 
                     // 3. Original Price
                     Float originalPrice;
@@ -258,19 +263,19 @@ public class CrawlingService {
 //                    System.out.println(discountedPrice);
 //                    System.out.println(urlLink);
 //                    System.out.println(reviewQuantity);
-//                    System.out.println(soldQuantity);
+                    System.out.println(soldQuantity);
 
-                    Product product = new Product();
-                    product.setName(productTitle);
-                    product.setImage(imageProduct);
-                    product.setPrice(originalPrice);
-                    product.setDiscount(discountPercentage);
-                    product.setSalePrice(discountedPrice);
-                    product.setUrl(urlLink);
-                    product.setReview(reviewQuantity);
-                    product.setSold(soldQuantity);
-
-                    productList.add(product);
+//                    Product product = new Product();
+//                    product.setName(productTitle);
+//                    product.setImage(imageProduct);
+//                    product.setPrice(originalPrice);
+//                    product.setDiscount(discountPercentage);
+//                    product.setSalePrice(discountedPrice);
+//                    product.setUrl(urlLink);
+//                    product.setReview(reviewQuantity);
+//                    product.setSold(soldQuantity);
+//
+//                    productList.add(product);
 
                     perPage.close();
 
