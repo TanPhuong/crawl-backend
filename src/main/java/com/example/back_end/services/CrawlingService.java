@@ -4,6 +4,8 @@ import com.example.back_end.models.Crawl;
 import com.example.back_end.models.Product;
 import com.example.back_end.models.Time;
 import com.example.back_end.repository.CrawlRepository;
+import com.example.back_end.repository.ProductRepository;
+import com.example.back_end.repository.TimeRepository;
 import com.microsoft.playwright.*;
 import com.microsoft.playwright.Page.WaitForNavigationOptions;
 import com.microsoft.playwright.options.LoadState;
@@ -32,10 +34,17 @@ public class CrawlingService {
 
     private CrawlRepository crawlRepository;
 
+    private ProductRepository productRepository;
+
+    private TimeRepository timeRepository;
+
     @Autowired
-    public CrawlingService(Playwright playwright, CrawlRepository crawlRepository) {
+    public CrawlingService(Playwright playwright, CrawlRepository crawlRepository,
+                           ProductRepository productRepository, TimeRepository timeRepository) {
         this.crawlRepository = crawlRepository;
         this.playwright = playwright;
+        this.productRepository = productRepository;
+        this.timeRepository = timeRepository;
     }
 
     private boolean checkString(Queue<String> queue,String duplicate) {
@@ -49,6 +58,11 @@ public class CrawlingService {
 
     public Iterable<Crawl> findAll() {
         return this.crawlRepository.findAll();
+    }
+
+    public List<Time> crawlTime(String url, List<String> keywords) {
+        List<Time> timeList = new ArrayList<>();
+        return timeList;
     }
 
     public List<Product> crawlProduct(String url, List<String> keywords) {
@@ -137,6 +151,7 @@ public class CrawlingService {
                         time.setTimeCrawl(saleTime);
                         time.setDateCrawl(LocalDate.now());
                         time.setCrawl(crawl);
+                        this.timeRepository.save(time);
                     }
                 } catch (Exception e) {
                     e.printStackTrace();
@@ -167,9 +182,6 @@ public class CrawlingService {
 
                         String originalPriceString = originalPriceLocator.elementHandle().textContent();
 
-//                        String originalPriceString = page.locator("div[class*='Wrapper']")
-//                                .locator("div[class*='OriginalPrice']").nth(i).textContent();
-
                         String convertOriginalPrice = originalPriceString.replaceAll("[^0-9.-]+", "");
                         originalPrice = Float.parseFloat(convertOriginalPrice.replace(".",""));
                     } catch (Exception e) {
@@ -186,9 +198,6 @@ public class CrawlingService {
 
                         String discountPercentageString = discountPercentageLocator.elementHandle().textContent();
 
-//                        String discountPercentageString = page.locator("div[class*='Wrapper']")
-//                                .locator("div[class*='DiscountPercentage']").nth(i).textContent();
-
                         discountPercentage = Float.parseFloat(discountPercentageString.replaceAll("[^0-9.-]+", ""));
                     } catch (Exception e) {
                         discountPercentage = 0f;
@@ -202,9 +211,6 @@ public class CrawlingService {
                         discountedPriceLocator.waitFor(new Locator.WaitForOptions().setTimeout(2000));
 
                         String discountPercentageString = discountedPriceLocator.elementHandle().textContent();
-
-//                        String discountedPriceString = page.locator("div[class*='Wrapper']")
-//                                .locator("div[class*='DiscountedPrice']").nth(i).textContent();
 
                         String convertDiscountedPrice = discountPercentageString.replaceAll("[^0-9.-]+", "");
                         discountedPrice = Float.parseFloat(convertDiscountedPrice.replace(".",""));
@@ -265,17 +271,19 @@ public class CrawlingService {
 //                    System.out.println(reviewQuantity);
                     System.out.println(soldQuantity);
 
-//                    Product product = new Product();
-//                    product.setName(productTitle);
-//                    product.setImage(imageProduct);
-//                    product.setPrice(originalPrice);
-//                    product.setDiscount(discountPercentage);
-//                    product.setSalePrice(discountedPrice);
-//                    product.setUrl(urlLink);
-//                    product.setReview(reviewQuantity);
-//                    product.setSold(soldQuantity);
-//
-//                    productList.add(product);
+                    Product product = new Product();
+                    product.setName(productTitle);
+                    product.setImage(imageProduct);
+                    product.setPrice(originalPrice);
+                    product.setDiscount(discountPercentage);
+                    product.setSalePrice(discountedPrice);
+                    product.setUrl(urlLink);
+                    product.setReview(reviewQuantity);
+                    product.setSold(soldQuantity);
+
+                    this.productRepository.save(product);
+
+                    productList.add(product);
 
                     perPage.close();
 

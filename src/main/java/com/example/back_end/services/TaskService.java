@@ -28,6 +28,12 @@ public class TaskService {
             fields.put("productId", String.valueOf(productInput.getId()));
             fields.put("productName", productInput.getName());
             fields.put("productPrice", String.valueOf(productInput.getPrice()));
+            fields.put("productDiscount", String.valueOf(productInput.getDiscount()));
+            fields.put("productSalePrice", String.valueOf(productInput.getSalePrice()));
+            fields.put("productReview", String.valueOf(productInput.getReview()));
+            fields.put("productSold", String.valueOf(productInput.getSold()));
+            fields.put("productUrl", productInput.getUrl());
+            fields.put("productImg", productInput.getImage());
 
             // Tạo bản ghi từ Map và thêm nó vào stream
             MapRecord<String, String, String> record = MapRecord.create(TASK_STREAM, fields);

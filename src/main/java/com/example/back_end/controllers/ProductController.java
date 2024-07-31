@@ -37,8 +37,6 @@ public class ProductController {
     @QueryMapping
     public Iterable<Product> findAllProduct() {
 
-
-
         LocalTime now = LocalTime.now();
 
         // Find time to crawl
@@ -74,40 +72,31 @@ public class ProductController {
         if(nextTimeCrawl != null) {
             if(now.isAfter(nextTimeCrawl)) {
                 // Delete product and time crawl in database in order to crawl the new one
-//                this.productRepository.deleteAll();
+                this.productRepository.deleteAll();
                 this.timeRepository.deleteAll();
 
                 // Crawling product
                 for(Crawl url: urlList) {
                     String urlLink = url.getNameUrl();
-                    Long urlID = url.getId();
                     if(url.getStatus()) {
                         List<Product> productList = this.crawlingService.crawlProduct(urlLink, keywords);
                         if(productList == null) {
                             break;
                         }
-
-                        for(Product product: productList) {
-                            this.productRepository.save(product);
-                        }
                     }
                 }
             }
-        } else if(this.productRepository.count() < 30) {
+        } else if(this.productRepository.count() < 30 || nextTimeCrawl == null) {
 
+            this.productRepository.deleteAll();
             this.timeRepository.deleteAll();
             // Crawling product
             for(Crawl url: urlList) {
                 String urlLink = url.getNameUrl();
-                Long urlID = url.getId();
                 if(url.getStatus()) {
                     List<Product> productList = this.crawlingService.crawlProduct(urlLink, keywords);
                     if(productList == null) {
                         break;
-                    }
-
-                    for(Product product: productList) {
-                        this.productRepository.save(product);
                     }
                 }
             }

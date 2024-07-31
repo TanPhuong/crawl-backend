@@ -1,5 +1,8 @@
 package com.example.back_end.services;
 
+import com.example.back_end.models.Order;
+import com.example.back_end.models.Product;
+import com.example.back_end.repository.OrderRepository;
 import jakarta.annotation.PostConstruct;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.connection.RedisConnection;
@@ -10,6 +13,7 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 import java.time.Duration;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 
@@ -21,6 +25,12 @@ public class WorkerService {
     private static final String TASK_STREAM = "task-stream";
     private static final String CONSUMER_GROUP = "task-group";
     private static final String CONSUMER_NAME = "worker-1";
+
+    private OrderRepository orderRepository;
+
+    public WorkerService(OrderRepository orderRepository) {
+        this.orderRepository = orderRepository;
+    }
 
     @PostConstruct
     public void init() {
@@ -59,6 +69,22 @@ public class WorkerService {
                 Map<Object, Object> taskData = task.getValue();
                 // Xử lý task
                 System.out.println("Processing task: " + taskId + " with data: " + taskData);
+                Product productOrder = new Product();
+                productOrder.setId((Long) taskData.get("productId"));
+                productOrder.setName((String) taskData.get("productName"));
+                productOrder.setPrice((Float) taskData.get("productPrice"));
+                productOrder.setDiscount((Float) taskData.get("productDiscount"));
+                productOrder.setSalePrice((Float) taskData.get("productSalePrice"));
+                productOrder.setReview((Float) taskData.get("productReview"));
+                productOrder.setSold((Float) taskData.get("productSold"));
+                productOrder.setUrl((String) taskData.get("productUrl"));
+                productOrder.setImage((String) taskData.get("productImg"));
+
+                Order newOrder = new Order();
+                newOrder.setCreateAt(LocalDateTime.now());
+                newOrder.setProduct(productOrder);
+                this.orderRepository.save(newOrder);
+
                 // Xác nhận đã xử lý task
                 streamOps.acknowledge(TASK_STREAM, CONSUMER_GROUP, taskId);
             }
