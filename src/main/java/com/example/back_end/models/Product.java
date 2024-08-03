@@ -41,4 +41,8 @@ public class Product {
 
     @Column(name = "sold")
     private Float sold;
+
+    @ManyToOne
+    @JoinColumn(name = "crawlID")
+    private Crawl crawl;
 }

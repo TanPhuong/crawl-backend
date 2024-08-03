@@ -2,6 +2,7 @@ package com.example.back_end.controllers;
 
 import com.example.back_end.dtos.ProductDTO;
 import com.example.back_end.models.Product;
+import com.example.back_end.models.User;
 import com.example.back_end.services.TaskService;
 import com.example.back_end.services.WorkerService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -23,10 +24,9 @@ public class TaskController {
     }
 
     @MutationMapping
-    public String createTasks(@Argument(name = "productInput") Product productDTO) {
-        this.taskService.createAndPushTasks(productDTO);
+    public String createTasks(@Argument(name = "productInput") Product productDTO, @Argument(name = "userInput") User user) {
+        this.taskService.createAndPushTasks(productDTO, user);
         this.workerService.processTasks();
         return "Complete task";
     }
-
 }

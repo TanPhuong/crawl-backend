@@ -60,11 +60,6 @@ public class CrawlingService {
         return this.crawlRepository.findAll();
     }
 
-    public List<Time> crawlTime(String url, List<String> keywords) {
-        List<Time> timeList = new ArrayList<>();
-        return timeList;
-    }
-
     public List<Product> crawlProduct(String url, List<String> keywords) {
 
         // Playwright
@@ -77,9 +72,9 @@ public class CrawlingService {
             Browser browser = playwright.chromium().launch(new BrowserType.LaunchOptions());
             BrowserContext context = browser.newContext(new Browser.NewContextOptions()
                     .setUserAgent(userAgent)
-//                    .setProxy(new Proxy("http://45.127.248.127:5128")
-//                            .setUsername("nlurysba")
-//                            .setPassword("3r9nz50smr31"))
+                    .setProxy(new Proxy("http://45.127.248.127:5128")
+                            .setUsername("nlurysba")
+                            .setPassword("3r9nz50smr31"))
             );
 
             Page page = context.newPage();
@@ -227,9 +222,6 @@ public class CrawlingService {
 //                     Create new browser context to add proxy pool when navigate to each product url
                     BrowserContext contextPerPage = browser.newContext(new Browser.NewContextOptions()
                             .setUserAgent(userAgent)
-//                            .setProxy(new Proxy("http://45.127.248.127:5128")
-//                                    .setUsername("nlurysba")
-//                                    .setPassword("3r9nz50smr31"))
                     );
 
                     Page perPage = contextPerPage.newPage();
@@ -238,7 +230,6 @@ public class CrawlingService {
                     perPage.waitForLoadState(LoadState.NETWORKIDLE);
 
                     // 7. Get review quantity
-
                     Float reviewQuantity;
                     try {
                         perPage.waitForSelector("a[data-view-id*='view_review']", new Page.WaitForSelectorOptions().setTimeout(3000));
@@ -265,6 +256,10 @@ public class CrawlingService {
                     System.out.println(productTitle);
                     System.out.println(soldQuantity);
 
+                    Crawl crawl = new Crawl();
+                    crawl.setNameUrl(url);
+                    crawl.setStatus(true);
+
                     Product product = new Product();
                     product.setName(productTitle);
                     product.setImage(imageProduct);
@@ -274,6 +269,7 @@ public class CrawlingService {
                     product.setUrl(urlLink);
                     product.setReview(reviewQuantity);
                     product.setSold(soldQuantity);
+                    product.setCrawl(crawl);
 
                     this.productRepository.save(product);
 

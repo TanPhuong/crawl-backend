@@ -21,12 +21,10 @@ import java.util.Arrays;
 import java.util.List;
 
 @Configuration
-//@EnableMethodSecurity
 @EnableWebSecurity
 @EnableWebMvc
 @RequiredArgsConstructor
 public class WebSecurityConfig {
-
     @Value("${api.prefix}")
     private String apiPrefix;
 

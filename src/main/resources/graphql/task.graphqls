@@ -1,4 +1,5 @@
 #import ./product.graphql
+#import ./user.graphql
 
 type Task {
     taskId: String,
@@ -6,5 +7,5 @@ type Task {
 }
 
 extend type Mutation {
-    createTasks(productInput: ProductInput): String
+    createTasks(productInput: ProductInput, userInput: UserInput): String
 }

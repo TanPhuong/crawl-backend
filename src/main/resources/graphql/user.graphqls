@@ -8,6 +8,14 @@ type User {
     role: Role!
 }
 
+input UserInput {
+    id: ID!,
+    fullName: String,
+    email: String,
+    phoneNumber: String,
+    role: RoleInput
+}
+
 extend type Query {
     findAllUser: [User],
     findUserById(id: ID): User,

@@ -28,7 +28,7 @@ public class CrawlingController {
 
     @QueryMapping
     public Iterable<Crawl> findAllCrawl() {
-        return this.crawlRepository.findAll();
+        return this.crawlingService.findAll();
     }
 
     @MutationMapping

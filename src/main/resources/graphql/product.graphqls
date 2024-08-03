@@ -1,3 +1,5 @@
+#import ./crawl.graphql
+
 type Product {
     id: ID!,
     name: String,
@@ -7,7 +9,8 @@ type Product {
     url: String,
     image: String,
     review: Float,
-    sold: Float
+    sold: Float,
+    crawl: Crawl
 }
 
 input ProductInput {
@@ -19,7 +22,8 @@ input ProductInput {
     url: String,
     image: String,
     review: Float,
-    sold: Float
+    sold: Float,
+    crawl: CrawlInput
 }
 
 extend type Query {

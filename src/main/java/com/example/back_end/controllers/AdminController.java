@@ -33,5 +33,4 @@ public class AdminController {
     public User findUserByEmail(@Argument String email) {
         return this.adminRepository.findUserByEmail(email).orElseThrow();
     }
-
 }

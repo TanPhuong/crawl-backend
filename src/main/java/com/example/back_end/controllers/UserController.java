@@ -60,13 +60,11 @@ public class UserController {
                             .user(existUser)
                             .token(token)
                     .build());
-//            return ResponseEntity.ok(token);
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(loginResponse.builder()
                             .user(null)
                             .token(e.getMessage())
                     .build());
-//            return  ResponseEntity.badRequest().body(e.getMessage());
         }
     }
 
