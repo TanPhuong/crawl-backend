@@ -13,6 +13,10 @@ public class RoleService {
         this.roleReposiroty = roleReposiroty;
     }
 
+    public Iterable<Role> findAllRole() {
+        return this.roleReposiroty.findAll();
+    }
+
     public Role updateRole(Long id, RoleDTO roleInput) {
         Role role = this.roleReposiroty.findById(id).orElseThrow(() -> new RuntimeException("ID is not exist"));
 

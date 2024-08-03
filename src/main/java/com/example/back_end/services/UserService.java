@@ -45,7 +45,12 @@ public class UserService implements IUserService{
                 .address(userDTO.getAddress())
                 .build();
 
-        Role existingRole = roleReposiroty.findById(userDTO.getRoleID())
+        Long customerRoleID = 2L;
+
+//        Role existingRole = roleReposiroty.findById(userDTO.getRoleID())
+//                .orElseThrow(() -> new DataNotFoundException("Role not found"));
+
+        Role existingRole = roleReposiroty.findById(customerRoleID)
                 .orElseThrow(() -> new DataNotFoundException("Role not found"));
 
         newUser.setRole(existingRole);

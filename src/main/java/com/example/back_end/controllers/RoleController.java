@@ -34,7 +34,7 @@ public class RoleController {
 
     @QueryMapping
     public Iterable<Role> findAllRole() {
-        return this.roleReposiroty.findAll();
+        return this.roleService.findAllRole();
     }
 
     @QueryMapping

@@ -263,12 +263,6 @@ public class CrawlingService {
                     }
 
                     System.out.println(productTitle);
-//                    System.out.println(imageProduct);
-//                    System.out.println(originalPrice);
-//                    System.out.println(discountPercentage);
-//                    System.out.println(discountedPrice);
-//                    System.out.println(urlLink);
-//                    System.out.println(reviewQuantity);
                     System.out.println(soldQuantity);
 
                     Product product = new Product();

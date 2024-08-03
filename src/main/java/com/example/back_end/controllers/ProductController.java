@@ -38,6 +38,9 @@ public class ProductController {
     public Iterable<Product> findAllProduct() {
 
         LocalTime now = LocalTime.now();
+        LocalTime endTimeCrawl = LocalTime.of(2, 0);
+
+        boolean isInTimeRange = !now.equals(LocalTime.MIDNIGHT) && now.isAfter(endTimeCrawl);
 
         // Find time to crawl
         LocalTime nextTimeCrawl = null;
@@ -86,8 +89,7 @@ public class ProductController {
                     }
                 }
             }
-        } else if(this.productRepository.count() < 30 || nextTimeCrawl == null) {
-
+        } else if(this.productRepository.count() < 30 || isInTimeRange || now.isAfter(LocalTime.of(8,0))) {
             this.productRepository.deleteAll();
             this.timeRepository.deleteAll();
             // Crawling product
