@@ -60,21 +60,20 @@ public class CrawlingService {
         return this.crawlRepository.findAll();
     }
 
-    public List<Product> crawlProduct(String url, List<String> keywords) {
+    public List<Product> crawlProduct(String url, List<String> keywords, Crawl crawlUrl) {
 
         // Playwright
         Queue<String> listHref = new LinkedBlockingQueue<>();
         List<Product> productList = new ArrayList<>();
-
 
         try {
             // Playwright
             Browser browser = playwright.chromium().launch(new BrowserType.LaunchOptions());
             BrowserContext context = browser.newContext(new Browser.NewContextOptions()
                     .setUserAgent(userAgent)
-                    .setProxy(new Proxy("http://45.127.248.127:5128")
-                            .setUsername("nlurysba")
-                            .setPassword("3r9nz50smr31"))
+//                    .setProxy(new Proxy("http://45.127.248.127:5128")
+//                            .setUsername("nlurysba")
+//                            .setPassword("3r9nz50smr31"))
             );
 
             Page page = context.newPage();
@@ -138,14 +137,11 @@ public class CrawlingService {
                         System.out.println(saleTime);
 
                         // create crawl entity to save to time in database
-                        Crawl crawl = new Crawl();
-                        crawl.setNameUrl(url);
-                        crawl.setStatus(true);
 
                         Time time = new Time();
                         time.setTimeCrawl(saleTime);
                         time.setDateCrawl(LocalDate.now());
-                        time.setCrawl(crawl);
+                        time.setCrawl(crawlUrl);
                         this.timeRepository.save(time);
                     }
                 } catch (Exception e) {
@@ -156,7 +152,6 @@ public class CrawlingService {
 
                 // Get size of the product container
                 List<Locator> productTitleList = page.locator("div[class*='ProductTitle']").all();
-
 
                 for (int i = 0; i < productTitleList.size(); i++) {
 
@@ -256,10 +251,6 @@ public class CrawlingService {
                     System.out.println(productTitle);
                     System.out.println(soldQuantity);
 
-                    Crawl crawl = new Crawl();
-                    crawl.setNameUrl(url);
-                    crawl.setStatus(true);
-
                     Product product = new Product();
                     product.setName(productTitle);
                     product.setImage(imageProduct);
@@ -269,7 +260,7 @@ public class CrawlingService {
                     product.setUrl(urlLink);
                     product.setReview(reviewQuantity);
                     product.setSold(soldQuantity);
-                    product.setCrawl(crawl);
+                    product.setCrawl(crawlUrl);
 
                     this.productRepository.save(product);
 

@@ -82,7 +82,7 @@ public class ProductController {
                 for(Crawl url: urlList) {
                     String urlLink = url.getNameUrl();
                     if(url.getStatus()) {
-                        List<Product> productList = this.crawlingService.crawlProduct(urlLink, keywords);
+                        List<Product> productList = this.crawlingService.crawlProduct(urlLink, keywords, url);
                         if(productList == null) {
                             break;
                         }
@@ -96,7 +96,7 @@ public class ProductController {
             for(Crawl url: urlList) {
                 String urlLink = url.getNameUrl();
                 if(url.getStatus()) {
-                    List<Product> productList = this.crawlingService.crawlProduct(urlLink, keywords);
+                    List<Product> productList = this.crawlingService.crawlProduct(urlLink, keywords, url);
                     if(productList == null) {
                         break;
                     }
