@@ -49,14 +49,8 @@ public class ProductController {
 
             for(Time time: timeIterable) {
                 LocalTime timeItem = time.getTimeCrawl();
-                Duration shortestFutureDuration = null;
-
-                if(timeItem.isAfter(now)) {
-                    Duration duration = Duration.between(now, timeItem);
-                    if (shortestFutureDuration == null || duration.compareTo(shortestFutureDuration) < 0) {
-                        nextTimeCrawl = timeItem;
-                        shortestFutureDuration = duration;
-                    }
+                if(now.isAfter(timeItem)) {
+                    nextTimeCrawl = timeItem;
                 }
             }
         }
@@ -72,12 +66,23 @@ public class ProductController {
         List<String> keywords = new ArrayList<>();
         keywords.add("deal-hot");
 
-        if(nextTimeCrawl != null) {
+        if(this.productRepository.count() < 30) {
+            this.timeRepository.deleteAll();
+            this.productRepository.deleteAll();
+            // Crawling product
+            for(Crawl url: urlList) {
+                String urlLink = url.getNameUrl();
+                if(url.getStatus()) {
+                    List<Product> productList = this.crawlingService.crawlProduct(urlLink, keywords, url);
+                    if(productList == null) {
+                        break;
+                    }
+                }
+            }
+        } else if(nextTimeCrawl != null) {
             if(now.isAfter(nextTimeCrawl)) {
-                // Delete product and time crawl in database in order to crawl the new one
-                this.productRepository.deleteAll();
                 this.timeRepository.deleteAll();
-
+                this.productRepository.deleteAll();
                 // Crawling product
                 for(Crawl url: urlList) {
                     String urlLink = url.getNameUrl();
@@ -89,22 +94,9 @@ public class ProductController {
                     }
                 }
             }
-        } else if(this.productRepository.count() < 30 || isInTimeRange || now.isAfter(LocalTime.of(8,0))) {
-            this.productRepository.deleteAll();
-            this.timeRepository.deleteAll();
-            // Crawling product
-            for(Crawl url: urlList) {
-                String urlLink = url.getNameUrl();
-                if(url.getStatus()) {
-                    List<Product> productList = this.crawlingService.crawlProduct(urlLink, keywords, url);
-                    if(productList == null) {
-                        break;
-                    }
-                }
-            }
         }
 
-        System.out.println(now);
+        System.out.println(nextTimeCrawl);
         return this.productRepository.findAll();
     }
 
@@ -112,7 +104,6 @@ public class ProductController {
     public Iterable<Product> prioritizeProduct() {
 
         Iterable<Product> productsList = this.productRepository.prioritizeProduct();
-
         return productsList;
     }
 }

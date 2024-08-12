@@ -15,4 +15,5 @@ input CrawlInput {
 
 extend type Mutation {
     addCrawl(input: CrawlInput): Crawl
+    updateCrawl(id: ID!, input: CrawlInput): Crawl
 }

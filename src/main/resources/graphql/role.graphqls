@@ -5,16 +5,16 @@ type Role {
 
 type Query {
     findAllRole: [Role]!,
-    findRoleById(id: ID): Role
+    findRoleById(id: ID!): Role
 }
 
 input RoleInput {
     id: ID!,
-    name: String!
+    name: String
 }
 
 type Mutation {
-    addRole(input: RoleInput): Role,
-    updateRole(id: ID!, roleInput: RoleInput): Role
+    addRole(input: RoleInput!): Role,
+    updateRole(id: ID!, roleInput: RoleInput!): Role
     deleteRole(id: ID!): String
 }

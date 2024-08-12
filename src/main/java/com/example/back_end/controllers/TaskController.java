@@ -27,6 +27,7 @@ public class TaskController {
     public String createTasks(@Argument(name = "productInput") Product productDTO, @Argument(name = "userInput") User user) {
         this.taskService.createAndPushTasks(productDTO, user);
         this.workerService.processTasks();
+        System.out.println("Done task");
         return "Complete task";
     }
 }

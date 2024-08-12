@@ -1,0 +1,41 @@
+#import ./crawl.graphql
+
+type Keyword {
+    id: ID!,
+    keyword_sale_url: String,
+    keyword_wrapper: String,
+    keyword_uptime: String,
+    keyword_title: String,
+    keyword_image: String,
+    keyword_price: String,
+    keyword_discount: String,
+    keyword_sale: String,
+    keyword_product: String,
+    keyword_review: String,
+    keyword_sold: String,
+    crawl: Crawl
+}
+
+extend type Query {
+    findAllKeyword: [Keyword]
+}
+
+input KeywordInput {
+    keyword_sale_url: String,
+    keyword_wrapper: String,
+    keyword_uptime: String,
+    keyword_title: String,
+    keyword_image: String,
+    keyword_price: String,
+    keyword_discount: String,
+    keyword_sale: String,
+    keyword_product: String,
+    keyword_review: String,
+    keyword_sold: String,
+    crawl: CrawlInput
+}
+
+extend type Mutation {
+    addKeyword(input: KeywordInput): Keyword
+    updateKeyword(id: ID!,input: KeywordInput): Keyword
+}

@@ -7,6 +7,9 @@ import org.springframework.data.jpa.repository.Query;
 import java.util.Optional;
 
 public interface ProductRepository extends JpaRepository<Product, Long> {
-    @Query("SELECT p FROM Product p ORDER BY p.sold DESC, p.review DESC")
+//    @Query("SELECT p FROM Product p ORDER BY p.sold DESC, p.review DESC")
+//    Iterable<Product> prioritizeProduct();
+
+    @Query("SELECT p FROM Product p ORDER BY p.discount DESC")
     Iterable<Product> prioritizeProduct();
 }

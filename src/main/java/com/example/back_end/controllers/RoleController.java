@@ -42,7 +42,6 @@ public class RoleController {
         return this.roleReposiroty.findById(id).orElseThrow();
     }
 
-
     @MutationMapping
     public Role addRole(@Validated @Argument(name = "input") RoleDTO roleDTO) {
         Role role = new Role();
@@ -51,12 +50,12 @@ public class RoleController {
     }
 
     @MutationMapping
-    public Role updateRole(@Argument Long id, @Argument RoleDTO roleInput) {
-        return this.roleService.updateRole(id, roleInput);
+    public Role updateRole(@Argument(name = "id") Long id, @Argument(name = "roleInput") Role roleInput) {
+        return this.roleService.updateRole(roleInput.getId(), roleInput);
     }
 
     @MutationMapping
-    public String deleteRole(@Argument Long id) {
+    public String deleteRole(@Argument(name = "id") Long id) {
         return this.roleService.deleteRole(id);
     }
 

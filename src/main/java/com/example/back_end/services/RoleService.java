@@ -17,9 +17,9 @@ public class RoleService {
         return this.roleReposiroty.findAll();
     }
 
-    public Role updateRole(Long id, RoleDTO roleInput) {
+    public Role updateRole(Long id, Role roleInput) {
         Role role = this.roleReposiroty.findById(id).orElseThrow(() -> new RuntimeException("ID is not exist"));
-
+        role.setId(id);
         role.setName(roleInput.getName());
         return this.roleReposiroty.save(role);
     }
