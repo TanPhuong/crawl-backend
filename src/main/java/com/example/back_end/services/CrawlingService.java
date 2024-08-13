@@ -303,13 +303,13 @@ public class CrawlingService {
 
         // Check if exist config about web crawl
         Keyword checkExistKeyword = this.keywordRepository.findCrawlById(crawl.getId());
-        if(checkExistKeyword != null) {
-            return checkExistKeyword;
-        }
+//        if (checkExistKeyword != null) {
+//            return checkExistKeyword;
+//        }
 
-        Browser browser = playwright.chromium().launch(new BrowserType.LaunchOptions());
+        Browser browser = playwright.chromium().launch(new BrowserType.LaunchOptions().setHeadless(false));
         BrowserContext context = browser.newContext(new Browser.NewContextOptions()
-                        .setUserAgent(userAgent)
+                .setUserAgent(userAgent)
         );
 
         Page page = context.newPage();
@@ -317,114 +317,164 @@ public class CrawlingService {
         page.navigate(crawl.getNameUrl());
         page.waitForLoadState(LoadState.LOAD);
 
+        try {
+            Thread.sleep(4000);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+
+        System.out.println("Accessing page...");
+
+        // Close ads
+        if(page.isVisible("div[class*='Popup'] img[alt*='close']")) {
+            page.click("div[class*='Popup'] img[alt*='close']");
+            page.waitForLoadState(LoadState.LOAD);
+        }
+
         // Build an automative system to crawl
-        ElementHandle elementHandle = page.querySelector("body *");
+
         // B0: Find keywords to sale page and navigate to it
         String saleUrl = null;
+        String foundUrl = null;
         List<String> foundAttributeHref = new ArrayList<>();
 
         List<String> urlSelectors = new ArrayList<>();
         urlSelectors.add("deal-hot");
         urlSelectors.add("flash-sale");
 
-        for(String keywordUrl : urlSelectors) {
-            Object attributeValues = elementHandle.evaluate("(element, keywordUrl) => { " +
+        for (String keywordUrl : urlSelectors) {
+            Object attributeValues = page.evaluate("(keywordUrl) => { " +
                     "let values = []; " +
-                    "for (let attr of element.attributes) { " +
-                    "    if (attr.value.includes(keywordUrl)) { " +
-                    "        values.push(attr.value); " +
+                    "let elements = document.querySelectorAll('*'); " + // Lấy tất cả các phần tử trên trang
+                    "elements.forEach(el => { " +
+                    "    if (el && el.attributes) { " + // Kiểm tra nếu phần tử có attributes
+                    "        for (let i = 0; i < el.attributes.length; i++) { " +
+                    "            let attr = el.attributes[i]; " +
+                    "            if (attr.value.includes(keywordUrl)) { " +
+                    "                values.push(attr.value); " +
+                    "            } " +
+                    "        } " +
                     "    } " +
-                    "} " +
+                    "}); " +
+                    "console.log('Found values: ' + values); " +
                     "return values; " +
                     "}", keywordUrl);
+
+            System.out.println(attributeValues);
+            if(((List<?>) attributeValues).isEmpty()) {
+                continue;
+            }
 
             if (attributeValues instanceof List<?>) {
                 List<?> attributeList = (List<?>) attributeValues;
                 for (Object value : attributeList) {
                     if (value instanceof String) {
                         foundAttributeHref.add((String) value);
-
-                        if (!foundAttributeHref.isEmpty()) {
-                            break;
-                        }
+                        foundUrl = keywordUrl;
                     }
                 }
             }
         }
 
-        for(String href : foundAttributeHref) {
+        for (String href : foundAttributeHref) {
             saleUrl = href;
             break;
         }
 
         System.out.println(saleUrl);
-        page.navigate(saleUrl);
-        page.waitForLoadState(LoadState.LOAD);
+
+        String formatUrl = "a[href*='" + foundUrl  + "']";
+        System.out.println(formatUrl);
+
+//        keywordConfig.setKeyword_sale(formatUrl);
+
+        if (!crawl.getNameUrl().contains(saleUrl)) {
+            String combineLink = crawl.getNameUrl() + saleUrl;
+            System.out.println(combineLink);
+            page.navigate(combineLink);
+        } else {
+            page.navigate(saleUrl);
+            System.out.println(saleUrl);
+        }
+        page.waitForLoadState(LoadState.NETWORKIDLE);
 
         // B1: Archive those selectors/locators like keywords (entity Keyword)
         Map<String, List<String>> selectors = new HashMap<>();
-        selectors.put("wrapper", Arrays.asList("wrapper", "Wrapper"));
+        selectors.put("wrapper", Arrays.asList("Wrapper", "wrapper"));
         selectors.put("uptime", Arrays.asList("upcoming-time"));
         selectors.put("product_title", Arrays.asList("ProductTitle", "product-title"));
 
         // B2: Read the structure if keyword match with selectors of the web then scrape the ATTRIBUTE and the TAGNAME
-        Map<String, List<String>> matchingSeletors = new HashMap<>();
 
-        // B2.1: Get ATTRIRBUTE
-        Map<String, List<String>> foundAttributes = new HashMap<>();
+        Map<String, List<String>> foundKeywords = new HashMap<>();      // tagName + attribute + keyword
 
-        for(Map.Entry<String, List<String>> entry: selectors.entrySet()) {
+        for (Map.Entry<String, List<String>> entry : selectors.entrySet()) {
 
             List<String> matchingKeyword = new ArrayList<>();
 
             String selectorKey = entry.getKey();
             List<String> keywordSelectors = entry.getValue();
 
-            for(String keywordSelector : keywordSelectors) {
-                Object attributeValues = elementHandle.evaluate("(element, keywordSelector) => { " +
-                        "let values = []; " +
-                        "for (let attr of element.attributes) { " +
-                        "if (attr.value.includes(keywordSelector)) { " +
-                        "values.push(attr.name); " +
-                        "} " +
-                        "} " +
-                        "return values; " +
+            for (String keywordSelector : keywordSelectors) {
+                Object selectorValues = page.evaluate("(keywordSelector) => { " +
+                        "let tagNames = []; " +
+                        "let elements = document.querySelectorAll('*'); " +
+                        "elements.forEach(el => { " +
+                        "    for (let i = 0; i < el.attributes.length; i++) { " +
+                        "        let attr = el.attributes[i]; " +
+                        "        if (attr.value.includes(keywordSelector)) { " +
+                        "            tagNames.push({ " +
+                        "                tagName: el.tagName, " +
+                        "                attributeName: attr.name " +
+                        "            }); " +
+                        "            break; " +
+                        "        } " +
+                        "    } " +
+                        "}); " +
+                        "return tagNames; " +
                         "}", keywordSelector);
 
-                System.out.println(attributeValues);
+                System.out.println(keywordSelector);
+                System.out.println(selectorValues);
 
-                // Ép kiểu của attributeValues để lưu vào matchingKeyword
-                if(attributeValues instanceof List<?>) {
-                    for(Object item: (List<?>) attributeValues) {
-                        if (item instanceof String) {
+                if(((List<?>) selectorValues).isEmpty()) {
+                    continue;
+                }
 
-                            String attributeName = (String)  item;
-                            String combinedAttribute = attributeName + "*='" +keywordSelector +"'";
+                // Kiểm tra và lưu kết quả
+                if (selectorValues instanceof List<?>) {
+                    for (Object result : (List<?>) selectorValues) {
+                        if (result instanceof Map<?, ?>) {
+                            @SuppressWarnings("unchecked")
+                            Map<String, String> resultMap = (Map<String, String>) result;
 
-                            matchingKeyword.add(combinedAttribute);
+                            String tagName = resultMap.get("tagName");
+                            String attributeName = resultMap.get("attributeName");
+
+                            // type:  div[class*='Wrapper']
+                            String combinedKeyword = tagName + "[" + attributeName + "*='" + keywordSelector + "']";
+                            System.out.println(combinedKeyword);
+
+                            // Ghi nhận kết quả
+                            if (!matchingKeyword.contains(combinedKeyword)) {
+                                if(!combinedKeyword.contains("FOOTER") || !combinedKeyword.contains("HEADER")) {
+                                    matchingKeyword.add(combinedKeyword);
+                                }
+                            }
                         }
                     }
+
+                }
+                if (!matchingKeyword.isEmpty()) {
+                    foundKeywords.put(selectorKey, matchingKeyword);
+                    break;
                 }
             }
-
-            if(!matchingKeyword.isEmpty()) {
-                foundAttributes.put(selectorKey, matchingKeyword);
-            }
-
-            System.out.println(foundAttributes);
         }
 
-
-        // B2.2: Get TAGNAME
-        Map<String, List<String>> foundTagName = new HashMap<>();
-
-        for(Map.Entry<String, List<String>> entry: foundAttributes.entrySet()) {
-
-        }
-
+        System.out.println(foundKeywords);
 
         // B3: If use textContent() with Attribute and Tagname and got result, set KeywordConfig
-
 
         page.close();
         return keywordConfig;

@@ -17,7 +17,8 @@ type Keyword {
 }
 
 extend type Query {
-    findAllKeyword: [Keyword]
+    findAllKeyword: [Keyword],
+    findKeywordByCrawl(input: CrawlInput): Keyword
 }
 
 input KeywordInput {
