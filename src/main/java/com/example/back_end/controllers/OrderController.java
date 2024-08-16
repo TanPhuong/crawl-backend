@@ -73,6 +73,7 @@ public class OrderController {
             headers.set("token", token);
             headers.set("X-Requested-With", "XMLHttpRequest");
             headers.set("Cache-Control", "no-cache");
+            headers.set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/127.0.0.0 Safari/537.36");
             HttpEntity<String> requestEntity = new HttpEntity<>(requestJson, headers);
 
             RestTemplate template = new RestTemplate();
