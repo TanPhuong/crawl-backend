@@ -2,10 +2,7 @@ package com.example.back_end.controllers;
 
 import com.example.back_end.models.Order;
 import jakarta.validation.Valid;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
+import org.springframework.http.*;
 import org.springframework.validation.BindingResult;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.annotation.*;
@@ -44,7 +41,6 @@ public class OrderController {
             String url = "https://tiki.vn/api/v2/carts/mine/buy-now";
 
             String productUrl = orderDTO.getProduct().getUrl();
-//            System.out.println(productUrl);
 
             URI uri = new URI(productUrl);
 
@@ -69,6 +65,8 @@ public class OrderController {
 
             System.out.println(requestJson);
 
+            String getAPI = "https://api.tiki.vn/raiden/v2/best-price/products/" + spidValue;
+
             // Cấu hình headers cho yêu cầu
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_JSON);
@@ -79,11 +77,16 @@ public class OrderController {
 
             RestTemplate template = new RestTemplate();
             ResponseEntity<String> response = null;
+            ResponseEntity<String> responseGet = null;
 
             try {
                 response = template.postForEntity(url, requestEntity, String.class);
                 System.out.println("Response Status Code: " + response.getStatusCode());
                 System.out.println("Response Body: " + response.getBody());
+
+                responseGet = template.exchange(getAPI, HttpMethod.GET, requestEntity, String.class);
+                System.out.println("Response Status Code: " + responseGet.getStatusCode());
+                System.out.println("Response Body: " + responseGet.getBody());
             } catch (HttpClientErrorException e) {
                 System.err.println("HTTP Status Code: " + e.getStatusCode());
                 System.err.println("Response Body: " + e.getResponseBodyAsString());

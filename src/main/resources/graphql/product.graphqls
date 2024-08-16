@@ -27,6 +27,10 @@ input ProductInput {
 }
 
 extend type Query {
+    getAllProduct: [Product],
     findAllProduct: [Product],
-    prioritizeProduct: [Product]
+    prioritizeProduct: [Product],
+    findProductByPriceDESC: [Product]
+    findProductByDiscount: [Product],
+    realTimeCrawl: [Product]
 }

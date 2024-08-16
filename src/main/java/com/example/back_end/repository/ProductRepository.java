@@ -12,4 +12,10 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
 
     @Query("SELECT p FROM Product p ORDER BY p.discount DESC")
     Iterable<Product> prioritizeProduct();
+
+    @Query("SELECT p FROM Product p ORDER BY p.salePrice DESC")
+    Iterable<Product> findProductByPriceDESC();
+
+    @Query("SELECT p FROM Product p ORDER BY p.discount DESC")
+    Iterable<Product> findProductByDiscount();
 }

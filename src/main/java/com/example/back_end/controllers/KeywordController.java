@@ -55,7 +55,7 @@ public class KeywordController {
 
     @MutationMapping
     public Keyword updateKeyword(@Argument(name = "id") Long id, @Argument(name = "input") Keyword keyword) {
-        Keyword newKeyword = new Keyword();
+        Keyword newKeyword = this.keywordRepository.findById(id).orElseThrow();
         newKeyword.setId(id);
         newKeyword.setKeyword_sale_url(keyword.getKeyword_sale_url());
         newKeyword.setKeyword_wrapper(keyword.getKeyword_wrapper());

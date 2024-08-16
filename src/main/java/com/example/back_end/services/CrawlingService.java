@@ -15,6 +15,10 @@ import com.microsoft.playwright.options.Proxy;
 import com.microsoft.playwright.options.WaitUntilState;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
+import org.springframework.scheduling.annotation.Async;
+import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.security.core.parameters.P;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
@@ -31,6 +35,9 @@ public class CrawlingService {
     @Autowired
     private Playwright playwright;
 
+    @Autowired
+    private SimpMessagingTemplate simpMessagingTemplate;
+
     private CrawlRepository crawlRepository;
 
     private ProductRepository productRepository;
@@ -40,12 +47,14 @@ public class CrawlingService {
 
     @Autowired
     public CrawlingService(Playwright playwright, CrawlRepository crawlRepository,
-                           ProductRepository productRepository, TimeRepository timeRepository, KeywordRepository keywordRepository) {
+                           ProductRepository productRepository, TimeRepository timeRepository,
+                           KeywordRepository keywordRepository, SimpMessagingTemplate simpMessagingTemplate) {
         this.crawlRepository = crawlRepository;
         this.playwright = playwright;
         this.productRepository = productRepository;
         this.timeRepository = timeRepository;
         this.keywordRepository = keywordRepository;
+        this.simpMessagingTemplate = simpMessagingTemplate;
     }
 
     private boolean checkString(Queue<String> queue,String duplicate) {
@@ -59,6 +68,114 @@ public class CrawlingService {
 
     public Iterable<Crawl> findAll() {
         return this.crawlRepository.findAll();
+    }
+
+    @Async
+    public List<Product> realTimeCrawling(Crawl crawl, List<String> keywords) {
+
+        // Compare entity Keyword and entity Crawl
+        Keyword matchCrawl = this.keywordRepository.findCrawlById(crawl.getId());
+        System.out.println(matchCrawl);
+
+        Queue<String> listHref = new LinkedBlockingQueue<>();
+        List<Product> productList = new ArrayList<>();
+
+        try {
+            // Playwright
+            Browser browser = playwright.chromium().launch(new BrowserType.LaunchOptions().setHeadless(false));
+            BrowserContext context = browser.newContext(new Browser.NewContextOptions()
+                            .setUserAgent(userAgent)
+            );
+
+            Page page = context.newPage();
+            // Điều hướng tới url
+            page.navigate(crawl.getNameUrl());
+            page.waitForLoadState(LoadState.LOAD);
+
+            // Close ads
+            if (page.isVisible("div[class*='Popup'] img[alt*='close']")) {
+                page.click("div[class*='Popup'] img[alt*='close']");
+                page.waitForLoadState(LoadState.LOAD);
+            }
+
+            // B1: Navigate to the sale page
+
+            for (String keyword : keywords) {
+                List<Locator> locators = page.locator(matchCrawl.getKeyword_sale_url()).all();
+
+                for (Locator locator : locators) {
+                    ElementHandle element = locator.elementHandle();
+                    String href = element.getAttribute("href");
+                    // Thêm code cho không trùng keyword như tiki
+                    if (checkString(listHref, keyword)) {
+                        listHref.add(href);
+                    }
+                }
+            }
+
+            // B2: Tracking and Monitoring the sold
+            while (!listHref.isEmpty()) {
+                String link = listHref.poll();
+
+                // Skip product from main page
+                if (link.contains("from_item")) {
+                    continue;
+                }
+
+                // Get link to the detail of flash sale page to get product list
+                if (!link.contains(crawl.getNameUrl())) {
+                    String combineLink = crawl.getNameUrl() + link;
+                    System.out.println(combineLink);
+                    page.navigate(combineLink);
+                } else {
+                    page.navigate(link);
+                    System.out.println(link);
+                }
+
+                page.evaluate("window.scrollTo(0, document.body.scrollHeight)");
+                page.waitForLoadState(LoadState.NETWORKIDLE);
+
+                Iterable<Product> productIterable = this.productRepository.findAll();
+                List<Product> productConvertedList = new ArrayList<>();
+                productIterable.forEach(productConvertedList::add);
+
+                // While to loop and monitor
+                while(true) {
+                    for (int i = 0; i < productConvertedList.size(); i++) {
+
+                        Product checkProduct = productConvertedList.get(i);
+
+                        String productTitle = page.locator(matchCrawl.getKeyword_wrapper())
+                                .locator(matchCrawl.getKeyword_title()).nth(i).textContent();
+
+                        if (checkProduct.getName().equals(productTitle)) {
+                            String soldString = page.locator(matchCrawl.getKeyword_wrapper())
+                                    .locator(matchCrawl.getKeyword_sold()).nth(i).textContent();
+                            String numbOnly = soldString.replaceAll("\\D+", "");
+                            if(numbOnly.equals("")) {
+                                continue;
+                            }
+                            Float sold = Float.parseFloat(numbOnly);
+
+                            if(!sold.equals(checkProduct.getSold())) {
+                                checkProduct.setSold(sold);
+                                System.out.println(checkProduct);
+                                this.productRepository.save(checkProduct);
+                            }
+                        }
+                    }
+                    simpMessagingTemplate.convertAndSend("/topic/products", productIterable);
+                    Thread.sleep(10000);
+                }
+            }
+
+
+        } catch (Exception e){
+            e.printStackTrace();
+            return null;
+        }
+
+        return productList;
     }
 
     public List<Product> crawlProduct(String url, List<String> keywords, Crawl crawlUrl) {
@@ -85,6 +202,12 @@ public class CrawlingService {
             // Điều hướng tới url
             page.navigate(url);
             page.waitForLoadState(LoadState.LOAD);
+
+            // Close ads
+            if(page.isVisible("div[class*='Popup'] img[alt*='close']")) {
+                page.click("div[class*='Popup'] img[alt*='close']");
+                page.waitForLoadState(LoadState.LOAD);
+            }
 
             // Bước 1: Thu thập các <a> chứa href theo tên từ khóa và đưa vào queue
 
@@ -303,9 +426,9 @@ public class CrawlingService {
 
         // Check if exist config about web crawl
         Keyword checkExistKeyword = this.keywordRepository.findCrawlById(crawl.getId());
-//        if (checkExistKeyword != null) {
-//            return checkExistKeyword;
-//        }
+        if (checkExistKeyword != null) {
+            return checkExistKeyword;
+        }
 
         Browser browser = playwright.chromium().launch(new BrowserType.LaunchOptions().setHeadless(false));
         BrowserContext context = browser.newContext(new Browser.NewContextOptions()
@@ -341,6 +464,7 @@ public class CrawlingService {
         List<String> urlSelectors = new ArrayList<>();
         urlSelectors.add("deal-hot");
         urlSelectors.add("flash-sale");
+        urlSelectors.add("flash");
 
         for (String keywordUrl : urlSelectors) {
             Object attributeValues = page.evaluate("(keywordUrl) => { " +
@@ -386,8 +510,6 @@ public class CrawlingService {
         String formatUrl = "a[href*='" + foundUrl  + "']";
         System.out.println(formatUrl);
 
-//        keywordConfig.setKeyword_sale(formatUrl);
-
         if (!crawl.getNameUrl().contains(saleUrl)) {
             String combineLink = crawl.getNameUrl() + saleUrl;
             System.out.println(combineLink);
@@ -400,9 +522,17 @@ public class CrawlingService {
 
         // B1: Archive those selectors/locators like keywords (entity Keyword)
         Map<String, List<String>> selectors = new HashMap<>();
-        selectors.put("wrapper", Arrays.asList("Wrapper", "wrapper"));
-        selectors.put("uptime", Arrays.asList("upcoming-time"));
-        selectors.put("product_title", Arrays.asList("ProductTitle", "product-title"));
+        selectors.put("wrapper", Arrays.asList("Wrapper", "inner"));
+        selectors.put("uptime", Arrays.asList("upcoming-time", "time"));
+        selectors.put("product_title", Arrays.asList("ProductTitle", "name", "title"));
+        selectors.put("product_image_url", Arrays.asList("WebpImg", "img", "jpg"));
+        selectors.put("product_price", Arrays.asList("OriginalPrice", "original-price", "origin-price"));
+        selectors.put("product_discount", Arrays.asList("DiscountPercentage", "discount"));
+        selectors.put("product_sale", Arrays.asList("DiscountedPrice", "final-price", "sale-price"));
+        selectors.put("product_url", Arrays.asList("flashdeal", "flash-sale", "flashsale"));
+        selectors.put("product_review", Arrays.asList("view_review", "review"));
+        selectors.put("product_sold", Arrays.asList("quantity_sold", "sold"));
+
 
         // B2: Read the structure if keyword match with selectors of the web then scrape the ATTRIBUTE and the TAGNAME
 
@@ -437,6 +567,7 @@ public class CrawlingService {
                 System.out.println(keywordSelector);
                 System.out.println(selectorValues);
 
+                // Sort some specific key by setting condition
                 if(((List<?>) selectorValues).isEmpty()) {
                     continue;
                 }
@@ -450,6 +581,12 @@ public class CrawlingService {
 
                             String tagName = resultMap.get("tagName");
                             String attributeName = resultMap.get("attributeName");
+
+                            if(selectorKey.contains("url")) {
+                                if(!tagName.contains("A") || !tagName.contains("IMG") || !tagName.contains("PICTURE")) {
+                                    continue;
+                                }
+                            }
 
                             // type:  div[class*='Wrapper']
                             String combinedKeyword = tagName + "[" + attributeName + "*='" + keywordSelector + "']";
@@ -474,7 +611,48 @@ public class CrawlingService {
 
         System.out.println(foundKeywords);
 
-        // B3: If use textContent() with Attribute and Tagname and got result, set KeywordConfig
+        // B3: Set KeywordConfig
+
+        keywordConfig.setId(crawl.getId());
+        keywordConfig.setKeyword_sale_url(formatUrl);
+
+        for (Map.Entry<String, List<String>> entry : foundKeywords.entrySet()) {
+            switch (entry.getKey()) {
+                case "wrapper":
+                    keywordConfig.setKeyword_wrapper(entry.getValue().get(0));
+                    break;
+                case "uptime":
+                    keywordConfig.setKeyword_uptime(entry.getValue().get(0));
+                    break;
+                case "product_title":
+                    keywordConfig.setKeyword_title(entry.getValue().get(0));
+                    break;
+                case "product_image_url":
+                    keywordConfig.setKeyword_image(entry.getValue().get(0));
+                    break;
+                case "product_price":
+                    keywordConfig.setKeyword_price(entry.getValue().get(0));
+                    break;
+                case "product_discount":
+                    keywordConfig.setKeyword_discount(entry.getValue().get(0));
+                    break;
+                case "product_sale":
+                    keywordConfig.setKeyword_sale(entry.getValue().get(0));
+                    break;
+                case "product_url":
+                    keywordConfig.setKeyword_product(entry.getValue().get(0));
+                    break;
+                case "product_review":
+                    keywordConfig.setKeyword_review(entry.getValue().get(0));
+                    break;
+                case "product_sold":
+                    keywordConfig.setKeyword_sold(entry.getValue().get(0));
+                    break;
+                default:
+                    System.out.println("Done");
+                    break;
+            }
+        }
 
         page.close();
         return keywordConfig;
