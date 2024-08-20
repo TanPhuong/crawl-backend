@@ -29,7 +29,19 @@ public class KeywordController {
         Keyword keyword = this.crawlingService.writeConfig(crawl);
         System.out.println(keyword);
 
-//        this.keywordRepository.save(keyword);
+        if(keywordRepository.existsById(keyword.getId())) {
+            return this.keywordRepository.findById(keyword.getId()).orElseThrow();
+        } else {
+            this.keywordRepository.save(keyword);
+        }
+
+        return this.keywordRepository.findById(keyword.getId()).orElseThrow();
+    }
+
+    @QueryMapping
+    public Keyword reConfigKeyword(@Argument(name = "input") Crawl crawl) {
+        Keyword keyword = this.crawlingService.rewriteConfig(crawl);
+        this.keywordRepository.save(keyword);
         return this.keywordRepository.findById(keyword.getId()).orElseThrow();
     }
 

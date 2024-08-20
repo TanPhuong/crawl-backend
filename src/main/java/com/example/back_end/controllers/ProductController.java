@@ -16,9 +16,11 @@ import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.Duration;
+import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 
 @Controller
 @RequiredArgsConstructor
@@ -35,23 +37,73 @@ public class ProductController {
     }
 
     @QueryMapping
+    public Iterable<Product> getAllProduct() {
+        return this.productRepository.findAll();
+    }
+
+    @QueryMapping
+    public Iterable<Product> prioritizeProduct() {
+        return this.productRepository.prioritizeProduct();
+    }
+
+    @QueryMapping
+    public Iterable<Product> findProductByPriceDESC() {
+        return this.productRepository.findProductByPriceDESC();
+    }
+
+    @QueryMapping
+    public Iterable<Product> findProductByDiscount() {
+        return this.productRepository.findProductByDiscount();
+    }
+
+    @QueryMapping
+    public Iterable<Product> realTimeCrawl() {
+
+        // Find url
+        Iterable<Crawl> crawlIterable = this.crawlingService.findAll();
+        List<Crawl> urlList = new ArrayList<>();
+        for (Crawl crawl : crawlIterable) {
+            urlList.add(crawl);
+        }
+
+        // Add Keyword
+        List<String> keywords = new ArrayList<>();
+        keywords.add("deal-hot");
+
+        // Crawling product
+        for(Crawl url: urlList) {
+            if(url.getStatus()) {
+                List<Product> productList = this.crawlingService.realTimeCrawling(url, keywords);
+                if(productList == null) {
+                    break;
+                }
+            }
+        }
+
+        return this.productRepository.findAll();
+    }
+
+    @QueryMapping
     public Iterable<Product> findAllProduct() {
 
         LocalTime now = LocalTime.now();
-        LocalTime endTimeCrawl = LocalTime.of(2, 0);
-
-        boolean isInTimeRange = !now.equals(LocalTime.MIDNIGHT) && now.isAfter(endTimeCrawl);
+        LocalDate nowDate = LocalDate.now();
 
         // Find time to crawl
         LocalTime nextTimeCrawl = null;
+        LocalDate dateCrawl = null;
         if(this.timeRepository.count() > 0) {
             Iterable<Time> timeIterable = this.timeRepository.findAll();
 
             for(Time time: timeIterable) {
                 LocalTime timeItem = time.getTimeCrawl();
+                dateCrawl = time.getDateCrawl();
+
                 if(now.isAfter(timeItem)) {
                     nextTimeCrawl = timeItem;
+                    break;
                 }
+
             }
         }
 
@@ -80,7 +132,7 @@ public class ProductController {
                 }
             }
         } else if(nextTimeCrawl != null) {
-            if(now.isAfter(nextTimeCrawl)) {
+            if(now.isAfter(nextTimeCrawl) || nowDate.isAfter(dateCrawl)) {
                 this.timeRepository.deleteAll();
                 this.productRepository.deleteAll();
                 // Crawling product
@@ -100,10 +152,4 @@ public class ProductController {
         return this.productRepository.findAll();
     }
 
-    @QueryMapping
-    public Iterable<Product> prioritizeProduct() {
-
-        Iterable<Product> productsList = this.productRepository.prioritizeProduct();
-        return productsList;
-    }
 }

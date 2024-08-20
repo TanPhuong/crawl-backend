@@ -24,6 +24,7 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
@@ -70,7 +71,6 @@ public class CrawlingService {
         return this.crawlRepository.findAll();
     }
 
-    @Async
     public List<Product> realTimeCrawling(Crawl crawl, List<String> keywords) {
 
         // Compare entity Keyword and entity Crawl
@@ -139,9 +139,28 @@ public class CrawlingService {
                 List<Product> productConvertedList = new ArrayList<>();
                 productIterable.forEach(productConvertedList::add);
 
+                Iterable<Time> timeIterable = this.timeRepository.findAll();
+                List<Time> timeConvertedList = new ArrayList<>();
+                timeIterable.forEach(timeConvertedList::add);
+
+                Time nextTime = null;
+
+                if(!timeConvertedList.isEmpty()) {
+                    nextTime = timeConvertedList.get(0);
+                }
+
                 // While to loop and monitor
                 while(true) {
                     for (int i = 0; i < productConvertedList.size(); i++) {
+
+                        Locator discountPercentageLocator = page.locator(matchCrawl.getKeyword_wrapper())
+                                .locator(matchCrawl.getKeyword_discount()).nth(i);
+                        String discountPercentageString = discountPercentageLocator.elementHandle().textContent();
+                        Float discountPercentage = Float.parseFloat(discountPercentageString.replaceAll("[^0-9.-]+", ""));
+
+                        if(-20 < discountPercentage && discountPercentage < 20) {
+                            continue;
+                        }
 
                         Product checkProduct = productConvertedList.get(i);
 
@@ -164,8 +183,15 @@ public class CrawlingService {
                             }
                         }
                     }
+                    System.out.println("Completed scanning...");
                     simpMessagingTemplate.convertAndSend("/topic/products", productIterable);
                     Thread.sleep(10000);
+
+                    if(nextTime != null) {
+                        if(LocalTime.now().isAfter(nextTime.getTimeCrawl())) {
+                            break;
+                        }
+                    }
                 }
             }
 
@@ -426,9 +452,9 @@ public class CrawlingService {
 
         // Check if exist config about web crawl
         Keyword checkExistKeyword = this.keywordRepository.findCrawlById(crawl.getId());
-        if (checkExistKeyword != null) {
-            return checkExistKeyword;
-        }
+//        if (checkExistKeyword != null) {
+//            return checkExistKeyword;
+//        }
 
         Browser browser = playwright.chromium().launch(new BrowserType.LaunchOptions().setHeadless(false));
         BrowserContext context = browser.newContext(new Browser.NewContextOptions()
@@ -525,13 +551,13 @@ public class CrawlingService {
         selectors.put("wrapper", Arrays.asList("Wrapper", "inner"));
         selectors.put("uptime", Arrays.asList("upcoming-time", "time"));
         selectors.put("product_title", Arrays.asList("ProductTitle", "name", "title"));
-        selectors.put("product_image_url", Arrays.asList("WebpImg", "img", "jpg"));
+        selectors.put("product_image_url", Arrays.asList("WebpImg", "image"));
         selectors.put("product_price", Arrays.asList("OriginalPrice", "original-price", "origin-price"));
         selectors.put("product_discount", Arrays.asList("DiscountPercentage", "discount"));
         selectors.put("product_sale", Arrays.asList("DiscountedPrice", "final-price", "sale-price"));
         selectors.put("product_url", Arrays.asList("flashdeal", "flash-sale", "flashsale"));
         selectors.put("product_review", Arrays.asList("view_review", "review"));
-        selectors.put("product_sold", Arrays.asList("quantity_sold", "sold"));
+        selectors.put("product_sold", Arrays.asList("progress", "sold"));
 
 
         // B2: Read the structure if keyword match with selectors of the web then scrape the ATTRIBUTE and the TAGNAME
@@ -543,6 +569,8 @@ public class CrawlingService {
             List<String> matchingKeyword = new ArrayList<>();
 
             String selectorKey = entry.getKey();
+            System.out.println(selectorKey);
+
             List<String> keywordSelectors = entry.getValue();
 
             for (String keywordSelector : keywordSelectors) {
@@ -582,10 +610,8 @@ public class CrawlingService {
                             String tagName = resultMap.get("tagName");
                             String attributeName = resultMap.get("attributeName");
 
-                            if(selectorKey.contains("url")) {
-                                if(!tagName.contains("A") || !tagName.contains("IMG") || !tagName.contains("PICTURE")) {
-                                    continue;
-                                }
+                            if(tagName.contains("FOOTER") || tagName.contains("HEADER")) {
+                                continue;
                             }
 
                             // type:  div[class*='Wrapper']
@@ -594,22 +620,25 @@ public class CrawlingService {
 
                             // Ghi nhận kết quả
                             if (!matchingKeyword.contains(combinedKeyword)) {
-                                if(!combinedKeyword.contains("FOOTER") || !combinedKeyword.contains("HEADER")) {
-                                    matchingKeyword.add(combinedKeyword);
-                                }
+                                matchingKeyword.add(combinedKeyword);
+                                break;
                             }
                         }
                     }
 
                 }
-                if (!matchingKeyword.isEmpty()) {
-                    foundKeywords.put(selectorKey, matchingKeyword);
+                // If have the selector need, then skip to next key
+                if(!matchingKeyword.isEmpty()) {
                     break;
                 }
             }
+
+            if (!matchingKeyword.isEmpty()) {
+                foundKeywords.put(selectorKey, matchingKeyword);
+            }
         }
 
-        System.out.println(foundKeywords);
+        System.out.println("All keyword:" + foundKeywords);
 
         // B3: Set KeywordConfig
 
@@ -659,7 +688,13 @@ public class CrawlingService {
     }
 
     public Keyword rewriteConfig(Crawl crawl) {
-        Keyword reConfig = new Keyword();
+
+        Keyword checkExistKeyword = this.keywordRepository.findCrawlById(crawl.getId());
+        if(checkExistKeyword != null) {
+            this.keywordRepository.deleteById(checkExistKeyword.getId());
+        }
+
+        Keyword reConfig = writeConfig(crawl);
 
         return  reConfig;
     }

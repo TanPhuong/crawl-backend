@@ -1,7 +1,10 @@
 package com.example.back_end.controllers;
 
 import com.example.back_end.models.Order;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.validation.Valid;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.*;
 import org.springframework.validation.BindingResult;
 import org.springframework.validation.FieldError;
@@ -10,18 +13,23 @@ import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
 
 import java.net.URI;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("api/v1/orders")
 public class OrderController {
 
     private final RestTemplate restTemplate;
+    private final ObjectMapper objectMapper;
 
     String token = "123";
 
-    public OrderController(RestTemplate restTemplate) {
+    @Autowired
+    public OrderController(RestTemplate restTemplate, ObjectMapper objectMapper) {
         this.restTemplate = restTemplate;
+        this.objectMapper = objectMapper;
     }
 
     @PostMapping("/create-order")
@@ -63,38 +71,48 @@ public class OrderController {
                     spidValue
             );
 
-            System.out.println(requestJson);
+//            System.out.println(requestJson);
 
             String getAPI = "https://api.tiki.vn/raiden/v2/best-price/products/" + spidValue;
 
             // Cấu hình headers cho yêu cầu
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_JSON);
-            headers.set("token", token);
+//            headers.set("token", token);
             headers.set("X-Requested-With", "XMLHttpRequest");
             headers.set("Cache-Control", "no-cache");
             headers.set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/127.0.0.0 Safari/537.36");
             HttpEntity<String> requestEntity = new HttpEntity<>(requestJson, headers);
 
             RestTemplate template = new RestTemplate();
-            ResponseEntity<String> response = null;
             ResponseEntity<String> responseGet = null;
 
             try {
-                response = template.postForEntity(url, requestEntity, String.class);
-                System.out.println("Response Status Code: " + response.getStatusCode());
-                System.out.println("Response Body: " + response.getBody());
+//                response = template.postForEntity(url, requestEntity, String.class);
+//                System.out.println("Response Status Code: " + response.getStatusCode());
+//                System.out.println("Response Body: " + response.getBody());
 
                 responseGet = template.exchange(getAPI, HttpMethod.GET, requestEntity, String.class);
                 System.out.println("Response Status Code: " + responseGet.getStatusCode());
                 System.out.println("Response Body: " + responseGet.getBody());
+
+                // Read json data
+                ObjectMapper objectMapper = new ObjectMapper();
+                JsonNode jsonNode = objectMapper.readTree(responseGet.getBody());
+
+                String valueCart = jsonNode.get("add_to_cart").asText();
+                System.out.println(valueCart);
+
+                Map<String, String> responseJson = new HashMap<>();
+                responseJson.put("add_to_cart", valueCart);
+
+                return ResponseEntity.ok(responseJson);
+
             } catch (HttpClientErrorException e) {
                 System.err.println("HTTP Status Code: " + e.getStatusCode());
                 System.err.println("Response Body: " + e.getResponseBodyAsString());
                 return ResponseEntity.badRequest().body("Error: " + e.getResponseBodyAsString());
             }
-
-            return ResponseEntity.ok("Created order");
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
